@@ -5,7 +5,7 @@ import io.github.gaoxingliang.dbupgrader.utils.*;
 
 import java.sql.*;
 
-@DbUpgrade(ver = 1, after = "V1AddTableUser")
+@DbUpgrade(version = 1, after = "V1AddTableUser")
 public class V1AddAdminRecord implements UpgradeProcess{
     @Override
     public void upgrade(DbUpgrader migrator, Connection connection) throws SQLException {

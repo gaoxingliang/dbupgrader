@@ -34,7 +34,7 @@ public class DbUpgrader {
         for (Class c : classList) {
             DbUpgrade upgrade = (DbUpgrade) c.getDeclaredAnnotation(DbUpgrade.class);
             if (upgrade != null) {
-                upgradeList.computeIfAbsent(upgrade.ver(), k -> new HashMap<>()).put(c, upgrade);
+                upgradeList.computeIfAbsent(upgrade.version(), k -> new HashMap<>()).put(c, upgrade);
             }
         }
         // commit current connection and close
@@ -95,6 +95,7 @@ public class DbUpgrader {
                         continue;
                     }
                     if (isUpgradeExecuted(conn, clazz.getName())) {
+                        log.info("Already executed " + className);
                         continue;
                     }
                     UpgradeProcess upgrade = (UpgradeProcess) instance;
@@ -106,6 +107,7 @@ public class DbUpgrader {
                                 "insert into " + upgradeConfiguration.getUpgradeHistoryTable() +
                                         "(class_name) values (?)", clazz.getName()
                         );
+                        log.info("Executed a new class " + className);
                     } catch (Exception e) {
                         log.severe("Failed to execute upgrade for class: " + className);
                         throw e;

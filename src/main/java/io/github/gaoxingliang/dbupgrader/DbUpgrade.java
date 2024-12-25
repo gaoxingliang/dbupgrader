@@ -8,15 +8,15 @@ import java.lang.annotation.*;
 public @interface DbUpgrade {
     /**
      * this upgrade class apply to which target version
-     * any version <= {@link UpgradeConfiguration#getTargetVersion()} will be executed
+     * any version less or equal than {@link UpgradeConfiguration#targetVersion} will be executed
      * @return
      */
-    int ver();
+    int version();
 
     /**
      * After which dbUprade class name.
      * For example V1AddTable.  then the full class will be:
-     * {@link UpgradeConfiguration#getUpgradeConfigurationTable()} + ".V1AddTable"
+     * {@link UpgradeConfiguration#upgradeClassPackage} + ".V1AddTable"
      * @return
      */
     String after() default "";

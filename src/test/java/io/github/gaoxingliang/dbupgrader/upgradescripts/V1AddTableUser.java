@@ -5,7 +5,7 @@ import io.github.gaoxingliang.dbupgrader.utils.*;
 
 import java.sql.*;
 
-@DbUpgrade(ver = 1)
+@DbUpgrade(version = 1)
 public class V1AddTableUser implements UpgradeProcess{
     @Override
     public void upgrade(DbUpgrader migrator, Connection connection) throws SQLException {

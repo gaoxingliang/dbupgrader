@@ -23,6 +23,6 @@ So the commands are:<br>
 ls ./build/jreleaser/deploy/mavenCentral/sonatype
 ```
 <br>
-
+publish it to here: https://central.sonatype.com/publishing
 
 It should use gradle command by guide [here](https://jreleaser.org/guide/latest/examples/maven/maven-central.html#_gradle)
