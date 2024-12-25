@@ -1,0 +1,126 @@
+plugins {
+    id 'java'
+    id 'java-library'
+    id 'maven-publish'
+    id 'org.jreleaser' version '1.13.1'
+}
+
+compileJava.options.encoding = "UTF-8"
+compileTestJava.options.encoding = "UTF-8"
+
+apply plugin: 'maven-publish'
+
+group 'io.gitee.gaoxingliang:dbupgrader'
+version '0.0.1'
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+repositories {
+    maven { url 'https://maven.aliyun.com/repository/public/' }
+    mavenLocal()
+    mavenCentral()
+}
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+dependencies {
+    implementation group: 'com.google.guava', name: 'guava', version: '33.4.0-jre'
+    implementation group: 'commons-io', name: 'commons-io', version: '2.18.0'
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.17.0'
+
+    implementation 'org.projectlombok:lombok:1.18.36'
+    testImplementation 'org.projectlombok:lombok:1.18.36'
+
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
+
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+
+    testImplementation 'mysql:mysql-connector-java:8.0.33'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId =  "io.gitee.gaoxingliang"
+            artifactId = 'dbupgrader'
+
+            from components.java
+
+            pom {
+                name = 'dbupgrader'
+                description = 'A lightweight database version management tool'
+                url = 'https://github.com/gaoxingliang/dbupgrader'
+                inceptionYear = '2024'
+                licenses {
+                    license {
+                        name = 'Apache-2.0'
+                        url = 'https://spdx.org/licenses/Apache-2.0.html'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'gaoxingliang'
+                        name = 'gaoxingliang'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:https://github.com/gaoxingliang/dbupgrader.git'
+                    developerConnection = 'scm:git:ssh://github.com/gaoxingliang/dbupgrader.git'
+                    url = 'https://github.com/gaoxingliang/dbupgrader'
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            url = layout.projectDirectory.dir('build/staging-deploy')
+        }
+    }
+}
+
+jreleaser {
+    signing {
+        active = 'ALWAYS'
+        armored = true
+        mode = 'FILE'
+        publicKey = '/Users/edward/.jreleaser/public.pgp'
+        secretKey = '/Users/edward/.jreleaser/private.pgp'
+    }
+    deploy {
+        maven {
+//            nexus2 {
+//                'maven-central' {
+//                    active = 'ALWAYS'
+//                    url = 'https://s01.oss.sonatype.org/service/local'
+//                    snapshotUrl = 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
+//                    closeRepository = true
+//                    releaseRepository = true
+//                    stagingRepository('build/staging-deploy'
+//                }
+//            }
+            mavenCentral {
+                sonatype {
+                    active = 'ALWAYS'
+                    url = 'https://central.sonatype.com/api/v1/publisher'
+                    stagingRepository('build/staging-deploy')
+                }
+            }
+        }
+    }
+}
