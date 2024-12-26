@@ -22,7 +22,7 @@ public class UpgradeConfiguration {
     private String upgradeConfigurationTable = "db_upgrade_configuration";
     private String createHistoryTableSql = "CREATE TABLE %s (" +
             "id BIGINT AUTO_INCREMENT PRIMARY KEY, " +
-            "class_name VARCHAR(100) NOT NULL, " +
+            "class_name VARCHAR(200) NOT NULL, " +
             "gmt_create TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
             "UNIQUE KEY uk_class_name (class_name)" +
             ")";
@@ -35,6 +35,15 @@ public class UpgradeConfiguration {
             "UNIQUE KEY uk_key_name (key_name)" +
             ")";
     private boolean dryRun = false;
+
+    /**
+     * In case of we missed some upgrade process, we will recheck recent version records and execute it if missed.
+     * for example, two branch may share a same target version and someone merged the branch to master, and upgrade it.
+     * while some other still use the old target version, and the upgrade process is missed.
+     * Recommendation: if you may have a long-running project/epic/feature, you may want to set this to a larger number.
+     * If <=0, we won't check that.
+     */
+    private int potentialMissVersionCount = 10;
 
     public static final String CONFIG_CURRENT_VERSION = "current_version";
 
@@ -82,6 +91,11 @@ public class UpgradeConfiguration {
             return this;
         }
 
+        public Builder potentialMissVersionCount(int potentialMissVersionCount) {
+            config.potentialMissVersionCount = potentialMissVersionCount;
+            return this;
+        }
+
         public UpgradeConfiguration build() {
             // Validate required fields
             Preconditions.checkArgument(StringUtils.isNotEmpty(config.upgradeClassPackage), 
@@ -98,7 +112,6 @@ public class UpgradeConfiguration {
                     "createConfigurationTableSql must not be empty");
             Preconditions.checkArgument(StringUtils.isNotEmpty(config.createHistoryTableSql),
                     "createHistoryTableSql must not be empty");
-
 
             return config;
         }

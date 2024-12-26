@@ -16,10 +16,10 @@ A lightweight database version management tool that helps you manage database sc
 For each version, different upgrade processes will execute in same transaction. Note in mysql, some ALTER, CREATE sql will trigger a transaction commit automatically.
 
 ## Quick Start
-full example: [DbUpgradeExample](./src/main/test/java/io/github/gaoxingliang/dbupgrader/DbUpgradeExample.java)
+full example: [DbUpgradeExample](./src/test/java/io/github/gaoxingliang/dbupgrader/DbUpgradeExample.java)
 
 ### 1. Add Dependency
-see latest version:
+see latest version: [maven central](https://mvnrepository.com/artifact/io.gitee.gaoxingliang/dbupgrader)
 ```groovy
 dependencies {
     implementation 'io.gitee.gaoxingliang:db-upgrader:0.0.1'
@@ -53,6 +53,21 @@ UpgradeConfiguration config = UpgradeConfiguration.builder()
 DbUpgrader upgrader = new DbUpgrader("example", dataSource, config);
 upgrader.upgrade();
 ```
+
+## UpgradeConfiguration
+
+source code [UpgradeConfiguration](./src/main/java/io/github/gaoxingliang/dbupgrader/UpgradeConfiguration.java)
+
+| Name | Required | Default value | Comment |
+| ---- | -------- | ------------- | ------- |
+| upgradeClassPackage | Yes | - | Package path where upgrade classes are located |
+| targetVersion | Yes | - | Target version number to upgrade to (must be > 0) |
+| upgradeHistoryTable | No | db_upgrade_history | Table name for storing upgrade history |
+| upgradeConfigurationTable | No | db_upgrade_configuration | Table name for storing upgrade configuration |
+| createHistoryTableSql | No | CREATE TABLE %s (id BIGINT AUTO_INCREMENT PRIMARY KEY, class_name VARCHAR(200) NOT NULL, gmt_create TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE KEY uk_class_name (class_name)) | SQL for creating history table if not exists. It has a placeholder for the table name if needed. |
+| createConfigurationTableSql | No | CREATE TABLE %s (id BIGINT AUTO_INCREMENT PRIMARY KEY, key_name VARCHAR(100) NOT NULL, value VARCHAR(500) NOT NULL, gmt_create TIMESTAMP DEFAULT CURRENT_TIMESTAMP, gmt_modified TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, UNIQUE KEY uk_key_name (key_name)) | SQL for creating configuration table if not exists. It has a placeholder for the table name if needed. |
+| dryRun | No | false | If true, will only simulate the upgrade without executing |
+| potentialMissVersionCount | No | 10 | In case of we missed some upgrade process, we will recheck recent version records and execute it if missed. for example, two branch may share a same target version and someone merged the branch to master, and upgrade it. while some other still use the old target version, and the upgrade process is missed. Recommendation: if you may have a long-running project/epic/feature, you may want to set this to a larger number.  If <=0, we won't check that. |
 
 ## Development Setup
 

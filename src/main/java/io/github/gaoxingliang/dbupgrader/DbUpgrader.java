@@ -37,23 +37,74 @@ public class DbUpgrader {
                 upgradeList.computeIfAbsent(upgrade.version(), k -> new HashMap<>()).put(c, upgrade);
             }
         }
-        // commit current connection and close
         conn.commit();
         SqlHelperUtils.closeQuietly(conn);
+
+        if (upgradeConfiguration.getPotentialMissVersionCount() > 0) {
+            checkPotentialMissedUpgrade(currentVer, upgradeList);
+        }
+
         log.info("Will try to upgrade from " + currentVer + " to " + targetVer);
 
         // 2 check and do upgrades
+        // any version left and is not processed?
         while (currentVer <= targetVer) {
             Map<Class, DbUpgrade> needUpgradeOfVersion = upgradeList.get(currentVer);
             if (needUpgradeOfVersion != null && !needUpgradeOfVersion.isEmpty()) {
-                executeUpgrades(needUpgradeOfVersion, currentVer);
+                executeUpgrades(needUpgradeOfVersion, currentVer, true);
             }
             currentVer++;
         }
         log.info("Upgrade finished for " + name);
     }
 
-    private void executeUpgrades(Map<Class, DbUpgrade> needUpgradeOfVersion, int currentVer) throws Exception {
+    private void checkPotentialMissedUpgrade(int currentVer, TreeMap<Integer, Map<Class, DbUpgrade>> upgradeList) throws Exception {
+        // Check for missed upgrades in recent versions
+
+        log.info("Checking for missed upgrades in recent " + upgradeConfiguration.getPotentialMissVersionCount() + " versions");
+        Connection checkConn = dataSource.getConnection();
+        checkConn.setAutoCommit(false);
+        try {
+            // Get versions less than currentVer in descending order
+            NavigableMap<Integer, Map<Class, DbUpgrade>> recentVersions = upgradeList.headMap(currentVer, false).descendingMap();
+
+            int checkedVersions = 0;
+            for (Map.Entry<Integer, Map<Class, DbUpgrade>> versionEntry : recentVersions.entrySet()) {
+                if (checkedVersions >= upgradeConfiguration.getPotentialMissVersionCount()) {
+                    break;
+                }
+
+                int ver = versionEntry.getKey();
+                Map<Class, DbUpgrade> upgradesForVersion = versionEntry.getValue();
+
+                // Check if any upgrade in this version was missed
+                boolean hasMissedUpgrades = false;
+                for (Class upgradeClass : upgradesForVersion.keySet()) {
+                    if (!isUpgradeExecuted(checkConn, upgradeClass.getName())) {
+                        log.warning("Found missed upgrade: " + upgradeClass.getName() + " for version " + ver);
+                        hasMissedUpgrades = true;
+                        break;
+                    }
+                }
+
+                // If we found missed upgrades, execute all upgrades for this version
+                if (hasMissedUpgrades) {
+                    executeUpgrades(upgradesForVersion, ver, false);
+                }
+
+                checkedVersions++;
+            }
+            checkConn.commit();
+        } catch (Exception e) {
+            checkConn.rollback();
+            throw e;
+        }
+        finally {
+            SqlHelperUtils.closeQuietly(checkConn);
+        }
+    }
+
+    private void executeUpgrades(Map<Class, DbUpgrade> needUpgradeOfVersion, int currentVer, boolean updateVersion) throws Exception {
         // Build dependency graph
         Map<String, Set<String>> graph = new HashMap<>();
         Map<String, Class> classMap = new HashMap<>();
@@ -95,30 +146,28 @@ public class DbUpgrader {
                         continue;
                     }
                     if (isUpgradeExecuted(conn, clazz.getName())) {
-                        log.info("Already executed " + className);
                         continue;
                     }
                     UpgradeProcess upgrade = (UpgradeProcess) instance;
                     try {
                         upgrade.upgrade(this, conn);
                         // Record successful upgrade
-                        SqlHelperUtils.executeUpdate(
-                                conn,
-                                "insert into " + upgradeConfiguration.getUpgradeHistoryTable() +
-                                        "(class_name) values (?)", clazz.getName()
-                        );
+                        SqlHelperUtils.executeUpdate(conn, "insert into " + upgradeConfiguration.getUpgradeHistoryTable() + "(class_name)" +
+                                " values (?)", clazz.getName());
                         log.info("Executed a new class " + className);
                     } catch (Exception e) {
                         log.severe("Failed to execute upgrade for class: " + className);
                         throw e;
                     }
                 } else {
-                    log.warning("The class " + className + " doesn't implemenet " + UpgradeProcess.class);
+                    log.warning("The class " + className + " doesn't implement " + UpgradeProcess.class);
                 }
             }
 
-            // Update current version
-            updateCurrentVersion(conn, currentVer);
+            if (updateVersion) {
+                // Update current version
+                updateCurrentVersion(conn, currentVer);
+            }
             conn.commit();
         } catch (Exception e) {
             if (conn != null) {
@@ -135,51 +184,38 @@ public class DbUpgrader {
         if (upgradeConfiguration.isDryRun()) {
             log.info("Will tick version to " + ver);
         } else {
-            SqlHelperUtils.executeUpdate(conn,
-                    "update " + upgradeConfiguration.getUpgradeConfigurationTable() + " set value = ? where key_name=?",
-                    ver + "", UpgradeConfiguration.CONFIG_CURRENT_VERSION);
+            SqlHelperUtils.executeUpdate(conn, "update " + upgradeConfiguration.getUpgradeConfigurationTable() + " set value = ? where " +
+                    "key_name=?", ver + "", UpgradeConfiguration.CONFIG_CURRENT_VERSION);
             log.info("Tick version to " + ver);
         }
     }
 
     private void createUpgradeHistoryTableIfNotExists(Connection conn, String tableName) throws SQLException {
-        String createTableSql = String.format(
-                upgradeConfiguration.getCreateHistoryTableSql(),
-                tableName
-        );
+        String createTableSql = String.format(upgradeConfiguration.getCreateHistoryTableSql(), tableName);
         SqlHelperUtils.createTableIfNotExists(conn, tableName, createTableSql);
     }
 
     private boolean isUpgradeExecuted(Connection conn, String className) throws SQLException {
-        String executed = SqlHelperUtils.query(conn,
-                "select class_name from " + upgradeConfiguration.getUpgradeHistoryTable() + " where class_name = ?",
-                rs -> rs.getString(1), className
-        );
+        String executed = SqlHelperUtils.query(conn, "select class_name from " + upgradeConfiguration.getUpgradeHistoryTable() + " where " +
+                "class_name = ?", rs -> rs.getString(1), className);
 
         return executed != null;
     }
 
     private void createConfigurationTableIfNotExists(Connection conn, String tableName) throws SQLException {
-        String createTableSql = String.format(
-                upgradeConfiguration.getCreateConfigurationTableSql(),
-                tableName
-        );
+        String createTableSql = String.format(upgradeConfiguration.getCreateConfigurationTableSql(), tableName);
         SqlHelperUtils.createTableIfNotExists(conn, tableName, createTableSql);
     }
 
 
     private int getCurrentVersion(Connection conn) throws SQLException {
-        String ver = SqlHelperUtils.query(conn,
-                "select value from " + upgradeConfiguration.getUpgradeConfigurationTable() + " where key_name = ?",
-                rs -> rs.getString(1),
-                UpgradeConfiguration.CONFIG_CURRENT_VERSION);
+        String ver = SqlHelperUtils.query(conn, "select value from " + upgradeConfiguration.getUpgradeConfigurationTable() + " where " +
+                "key_name = ?", rs -> rs.getString(1), UpgradeConfiguration.CONFIG_CURRENT_VERSION);
         int version = 0;
         if (ver == null) {
             version = 0;
-            SqlHelperUtils.insertWithIdReturned(conn,
-                    "insert into " + upgradeConfiguration.getUpgradeConfigurationTable() + "(key_name, value) values (?, ?)",
-                    UpgradeConfiguration.CONFIG_CURRENT_VERSION,
-                    version + "");
+            SqlHelperUtils.insertWithIdReturned(conn, "insert into " + upgradeConfiguration.getUpgradeConfigurationTable() + "(key_name, " +
+                    "value) values (?, ?)", UpgradeConfiguration.CONFIG_CURRENT_VERSION, version + "");
         } else {
             version = Integer.parseInt(ver);
         }
