@@ -54,6 +54,17 @@ DbUpgrader upgrader = new DbUpgrader("example", dataSource, config);
 upgrader.upgrade();
 ```
 
+## Tricky snippets for mysql
+Use `SqlHelperUtils.executeUpdate` to run the sql.
+### create table if not exists
+```sql
+CREATE TABLE IF NOT EXISTS XX (id int);
+```
+### add column if not exists
+```sql
+ALTER TABLE XX ADD COLUMN IF NOT EXISTS name VARCHAR(100);
+```
+
 ## UpgradeConfiguration
 
 source code [UpgradeConfiguration](./src/main/java/io/github/gaoxingliang/dbupgrader/UpgradeConfiguration.java)
