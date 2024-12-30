@@ -1,21 +1,17 @@
 package io.github.gaoxingliang.dbupgrader.starter;
 
-import io.github.gaoxingliang.dbupgrader.DbUpgrader;
-import io.github.gaoxingliang.dbupgrader.UpgradeConfiguration;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
-import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
+import io.github.gaoxingliang.dbupgrader.*;
+import lombok.extern.slf4j.*;
+import org.springframework.beans.factory.*;
+import org.springframework.boot.autoconfigure.*;
+import org.springframework.boot.autoconfigure.condition.*;
+import org.springframework.boot.autoconfigure.jdbc.*;
+import org.springframework.boot.context.properties.*;
+import org.springframework.context.annotation.*;
+import org.springframework.jdbc.datasource.lookup.*;
 
-import javax.sql.DataSource;
-import java.util.HashMap;
-import java.util.Map;
+import javax.sql.*;
+import java.util.*;
 
 @Slf4j
 @AutoConfiguration(after = DataSourceAutoConfiguration.class)
@@ -26,29 +22,36 @@ public class DbUpgraderAutoConfiguration {
 
     @Bean
     @ConditionalOnBean(DataSource.class)
-    public DbUpgraderInitializer dbUpgraderInitializer(
-            ObjectProvider<DataSource> dataSourceProvider,
-            DbUpgraderProperties properties) {
-        
-        return new DbUpgraderInitializer(dataSourceProvider, properties);
+    public DbUpgraderInitializer dbUpgraderInitializer(ObjectProvider<DataSource> dataSourceProvider, DbUpgraderProperties properties,
+                                                       DbUpgraderConfigurer configurer) {
+        return new DbUpgraderInitializer(dataSourceProvider, properties, configurer);
     }
 
     @Bean
     @ConditionalOnBean(AbstractRoutingDataSource.class)
-    public MultiDataSourceDbUpgraderInitializer multiDataSourceDbUpgraderInitializer(
-            ObjectProvider<AbstractRoutingDataSource> routingDataSourceProvider,
-            DbUpgraderProperties properties) {
-            
-        return new MultiDataSourceDbUpgraderInitializer(routingDataSourceProvider, properties);
+    public MultiDataSourceDbUpgraderInitializer multiDataSourceDbUpgraderInitializer(ObjectProvider<AbstractRoutingDataSource> routingDataSourceProvider, DbUpgraderProperties properties, DbUpgraderConfigurer configurer) {
+        return new MultiDataSourceDbUpgraderInitializer(routingDataSourceProvider, properties, configurer);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(DbUpgraderConfigurer.class)
+    public DbUpgraderConfigurer dbUpgraderConfigurer() {
+        return new DbUpgraderConfigurer() {
+            @Override
+            public void configureUpgradeProperties(String dataSourceName, DataSource dataSource, DbUpgraderProperties.DataSourceConfig dataSourceConfig) {
+            }
+        };
     }
 
     private static class DbUpgraderInitializer {
         private final ObjectProvider<DataSource> dataSourceProvider;
+        private final DbUpgraderConfigurer configurer;
         private final DbUpgraderProperties properties;
 
-        public DbUpgraderInitializer(ObjectProvider<DataSource> dataSourceProvider,
-                                   DbUpgraderProperties properties) {
+        public DbUpgraderInitializer(ObjectProvider<DataSource> dataSourceProvider, DbUpgraderProperties properties,
+                                     DbUpgraderConfigurer configurer) {
             this.dataSourceProvider = dataSourceProvider;
+            this.configurer = configurer;
             this.properties = properties;
             initialize();
         }
@@ -71,8 +74,12 @@ public class DbUpgraderAutoConfiguration {
                 return;
             }
 
+            configurer.configureUpgradeProperties("default", dataSource, config);
+
             try {
-                UpgradeConfiguration upgradeConfig = fromYamlConfig(config);
+                UpgradeConfiguration upgradeConfig =
+                        UpgradeConfiguration.builder().upgradeClassPackage(config.getUpgradeClassPackage()).targetVersion(config.getTargetVersion()).upgradeHistoryTable(config.getUpgradeHistoryTable()).upgradeConfigurationTable(config.getUpgradeConfigurationTable()).dryRun(config.isDryRun()).potentialMissVersionCount(config.getPotentialMissVersionCount()).build();
+
                 DbUpgrader upgrader = new DbUpgrader("default", dataSource, upgradeConfig);
                 upgrader.upgrade();
             } catch (Exception e) {
@@ -83,27 +90,26 @@ public class DbUpgraderAutoConfiguration {
 
     private static class MultiDataSourceDbUpgraderInitializer {
         private final ObjectProvider<AbstractRoutingDataSource> routingDataSourceProvider;
+        private final DbUpgraderConfigurer configurer;
         private final DbUpgraderProperties properties;
 
-        public MultiDataSourceDbUpgraderInitializer(
-                ObjectProvider<AbstractRoutingDataSource> routingDataSourceProvider,
-                DbUpgraderProperties properties) {
+        public MultiDataSourceDbUpgraderInitializer(ObjectProvider<AbstractRoutingDataSource> routingDataSourceProvider,
+                                                    DbUpgraderProperties properties, DbUpgraderConfigurer configurer) {
             this.routingDataSourceProvider = routingDataSourceProvider;
+            this.configurer = configurer;
             this.properties = properties;
             initialize();
         }
 
         private void initialize() {
             AbstractRoutingDataSource routingDataSource = routingDataSourceProvider.getIfAvailable();
-            if (routingDataSource == null || properties.getDataSources() == null) {
+            if (routingDataSource == null) {
                 return;
             }
 
             Map<Object, DataSource> targetDataSources = new HashMap<>();
             try {
-                // Use reflection to get targetDataSources from AbstractRoutingDataSource
-                java.lang.reflect.Field field = AbstractRoutingDataSource.class
-                        .getDeclaredField("targetDataSources");
+                java.lang.reflect.Field field = AbstractRoutingDataSource.class.getDeclaredField("targetDataSources");
                 field.setAccessible(true);
                 targetDataSources = (Map<Object, DataSource>) field.get(routingDataSource);
             } catch (Exception e) {
@@ -111,13 +117,18 @@ public class DbUpgraderAutoConfiguration {
                 return;
             }
 
-            for (Map.Entry<String, DbUpgraderProperties.DataSourceConfig> entry : 
-                    properties.getDataSources().entrySet()) {
+            Map<String, DataSource> dataSources = new HashMap<>();
+            for (Map.Entry<Object, DataSource> entry : targetDataSources.entrySet()) {
+                dataSources.put(entry.getKey().toString(), entry.getValue());
+            }
+
+
+            for (Map.Entry<String, DbUpgraderProperties.DataSourceConfig> entry : properties.getDataSources().entrySet()) {
                 String dataSourceName = entry.getKey();
                 DbUpgraderProperties.DataSourceConfig config = entry.getValue();
 
                 if (!config.isEnabled()) {
-                    log.info("DataSource {} dbupgrader is disable", dataSourceName);
+                    log.info("DataSource {} dbupgrader is disabled", dataSourceName);
                     continue;
                 }
 
@@ -127,26 +138,18 @@ public class DbUpgraderAutoConfiguration {
                     continue;
                 }
 
+                configurer.configureUpgradeProperties(dataSourceName, targetDataSource, config);
+
                 try {
-                    UpgradeConfiguration upgradeConfig = fromYamlConfig(config);
+                    UpgradeConfiguration upgradeConfig =
+                            UpgradeConfiguration.builder().upgradeClassPackage(config.getUpgradeClassPackage()).targetVersion(config.getTargetVersion()).upgradeHistoryTable(config.getUpgradeHistoryTable()).upgradeConfigurationTable(config.getUpgradeConfigurationTable()).dryRun(config.isDryRun()).potentialMissVersionCount(config.getPotentialMissVersionCount()).build();
+
                     DbUpgrader upgrader = new DbUpgrader(dataSourceName, targetDataSource, upgradeConfig);
                     upgrader.upgrade();
                 } catch (Exception e) {
-                    throw new RuntimeException(
-                            "Failed to initialize DbUpgrader for datasource: " + dataSourceName, e);
+                    throw new RuntimeException("Failed to initialize DbUpgrader for datasource: " + dataSourceName, e);
                 }
             }
         }
     }
-
-    static UpgradeConfiguration fromYamlConfig(DbUpgraderProperties.DataSourceConfig config) {
-        return  UpgradeConfiguration.builder()
-                .upgradeClassPackage(config.getUpgradeClassPackage())
-                .targetVersion(config.getTargetVersion())
-                .upgradeHistoryTable(config.getUpgradeHistoryTable())
-                .upgradeConfigurationTable(config.getUpgradeConfigurationTable())
-                .dryRun(config.isDryRun())
-                .potentialMissVersionCount(config.getPotentialMissVersionCount())
-                .build();
-    }
-} 
+}

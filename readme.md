@@ -20,11 +20,28 @@ full example: [DbUpgradeExample](./src/test/java/io/github/gaoxingliang/dbupgrad
 
 ### 1. Add Dependency
 see latest version: [maven central](https://mvnrepository.com/artifact/io.gitee.gaoxingliang/dbupgrader)
+
+Gradle:
+
 ```groovy
 dependencies {
-    implementation 'io.gitee.gaoxingliang:db-upgrader:0.0.1'
+   // https://mvnrepository.com/artifact/io.gitee.gaoxingliang/dbupgrader
+	implementation group: 'io.gitee.gaoxingliang', name: 'dbupgrader', version: '0.0.1'
 }
 ```
+
+Mvn:
+
+```xml
+<!-- https://mvnrepository.com/artifact/io.gitee.gaoxingliang/dbupgrader -->
+<dependency>
+    <groupId>io.gitee.gaoxingliang</groupId>
+    <artifactId>dbupgrader</artifactId>
+    <version>0.0.1</version>
+</dependency>
+```
+
+
 
 ### 2. Define Your Upgrades
 
@@ -65,6 +82,54 @@ CREATE TABLE IF NOT EXISTS XX (id int);
 ALTER TABLE XX ADD COLUMN IF NOT EXISTS name VARCHAR(100);
 ```
 
+## Quick start for springboot
+
+1、import the springboot starter:
+
+see latest version: [maven central](https://mvnrepository.com/artifact/io.gitee.gaoxingliang/dbupgrader-starter)
+
+Gradle:
+
+```groovy
+dependencies {
+   // https://mvnrepository.com/artifact/io.gitee.gaoxingliang/dbupgrader
+	implementation group: 'io.gitee.gaoxingliang', name: 'dbupgrader-starter', version: '0.0.1'
+}
+```
+
+Mvn:
+
+```xml
+<!-- https://mvnrepository.com/artifact/io.gitee.gaoxingliang/dbupgrader -->
+<dependency>
+    <groupId>io.gitee.gaoxingliang</groupId>
+    <artifactId>dbupgrader-starter</artifactId>
+    <version>0.0.1</version>
+</dependency>
+```
+
+2、application.yml
+
+Option a, set the targetVersion in yaml:
+
+```yaml
+dbupgrader:
+	enabled: true
+	dataSources:
+		default:
+			enabled: true
+			targetVersion: 1
+			upgradeClassPackage: com.example.upgrades.master
+```
+
+Option b, set the targetVersion in code:
+
+```
+create a bean DbUpgraderConfigurer
+```
+
+
+
 ## UpgradeConfiguration
 
 source code [UpgradeConfiguration](./src/main/java/io/github/gaoxingliang/dbupgrader/UpgradeConfiguration.java)
@@ -79,6 +144,14 @@ source code [UpgradeConfiguration](./src/main/java/io/github/gaoxingliang/dbupgr
 | createConfigurationTableSql | No | CREATE TABLE %s (id BIGINT AUTO_INCREMENT PRIMARY KEY, key_name VARCHAR(100) NOT NULL, value VARCHAR(500) NOT NULL, gmt_create TIMESTAMP DEFAULT CURRENT_TIMESTAMP, gmt_modified TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, UNIQUE KEY uk_key_name (key_name)) | SQL for creating configuration table if not exists. It has a placeholder for the table name if needed. |
 | dryRun | No | false | If true, will only simulate the upgrade without executing |
 | potentialMissVersionCount | No | 10 | In case of we missed some upgrade process, we will recheck recent version records and execute it if missed. for example, two branch may share a same target version and someone merged the branch to master, and upgrade it. while some other still use the old target version, and the upgrade process is missed. Recommendation: if you may have a long-running project/epic/feature, you may want to set this to a larger number.  If <=0, we won't check that. |
+
+
+
+## 
+
+
+
+
 
 ## Development Setup
 

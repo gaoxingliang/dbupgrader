@@ -1,9 +1,10 @@
 package io.github.gaoxingliang.dbupgrader.starter;
 
-import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import lombok.*;
+import org.springframework.boot.context.properties.*;
 
-import java.util.Map;
+import javax.sql.*;
+import java.util.*;
 
 @Data
 @ConfigurationProperties(prefix = "dbupgrader")
@@ -19,16 +20,10 @@ public class DbUpgraderProperties {
         /**
          * Whether to enable dbupgrader for this datasource
          */
-        private boolean enabled = true;
+        private boolean enabled = false;
 
         /**
-         * Target version for this specific datasource
-         * If not set, will use the global targetVersion
-         */
-        private Integer targetVersion;
-
-        /**
-         * Upgrade class package for this specific datasource
+         * Package path where upgrade classes are located
          */
         private String upgradeClassPackage;
 
@@ -51,5 +46,11 @@ public class DbUpgraderProperties {
          * In case of missed upgrade process, recheck recent version records
          */
         private int potentialMissVersionCount = 10;
+
+        /**
+         * Target version for this specific datasource. It can be set in external configurer.
+         * {@link DbUpgraderConfigurer#configureUpgradeProperties(String, DataSource, DataSourceConfig)}
+         */
+        private Integer targetVersion;
     }
 } 

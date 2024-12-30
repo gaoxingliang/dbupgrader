@@ -11,7 +11,7 @@ compileTestJava.options.encoding = "UTF-8"
 apply plugin: 'maven-publish'
 
 group 'io.gitee.gaoxingliang:dbupgrader'
-version '0.0.2'
+version '0.0.4'
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
 
@@ -20,6 +20,7 @@ configurations {
         extendsFrom annotationProcessor
     }
 }
+
 repositories {
     maven { url 'https://maven.aliyun.com/repository/public/' }
     mavenLocal()

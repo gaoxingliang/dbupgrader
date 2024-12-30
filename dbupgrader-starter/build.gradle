@@ -1,17 +1,36 @@
 plugins {
+    id 'java'
     id 'java-library'
     id 'maven-publish'
+    id 'org.jreleaser' version '1.13.1'
 }
 
-group = 'io.github.gaoxingliang'
-version = '0.0.1'
+compileJava.options.encoding = "UTF-8"
+compileTestJava.options.encoding = "UTF-8"
+
+apply plugin: 'maven-publish'
+
+group 'io.gitee.gaoxingliang:dbupgrader-starter'
+version '0.0.2'
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
 
 repositories {
+    maven { url 'https://maven.aliyun.com/repository/public/' }
+    mavenLocal()
     mavenCentral()
 }
 
 dependencies {
-    api 'io.gitee.gaoxingliang:dbupgrader:0.0.2'
+    // api 'io.gitee.gaoxingliang:dbupgrader:0.0.3'
+    implementation project(':dbupgrader')
+    // implementation files("/Users/edward/projects/dbupgrader/build/libs/dbupgrader-0.0.3.jar")
     compileOnly 'org.springframework.boot:spring-boot-starter:2.7.18'
     compileOnly 'org.springframework.boot:spring-boot-starter-jdbc:2.7.18'
     compileOnly 'org.springframework.boot:spring-boot-configuration-processor:2.7.18'
@@ -21,19 +40,76 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
 }
 
+
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    withJavadocJar()
+    withSourcesJar()
 }
 
 test {
     useJUnitPlatform()
 }
 
+
 publishing {
     publications {
-        mavenJava(MavenPublication) {
+        maven(MavenPublication) {
+            groupId =  "io.gitee.gaoxingliang"
+            artifactId = 'dbupgrader-starter'
+
             from components.java
+
+            pom {
+                name = 'dbupgrader-starter'
+                description = 'A springboot starter for dbupgrader'
+                url = 'https://github.com/gaoxingliang/dbupgrader'
+                inceptionYear = '2024'
+                licenses {
+                    license {
+                        name = 'Apache-2.0'
+                        url = 'https://spdx.org/licenses/Apache-2.0.html'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'gaoxingliang'
+                        name = 'gaoxingliang'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:https://github.com/gaoxingliang/dbupgrader.git'
+                    developerConnection = 'scm:git:ssh://github.com/gaoxingliang/dbupgrader.git'
+                    url = 'https://github.com/gaoxingliang/dbupgrader'
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            url = layout.projectDirectory.dir('build/staging-deploy')
+        }
+    }
+}
+
+jreleaser {
+    gitRootSearch = true
+    signing {
+        active = 'ALWAYS'
+        armored = true
+        mode = 'FILE'
+        publicKey = '/Users/edward/.jreleaser/public.pgp'
+        secretKey = '/Users/edward/.jreleaser/private.pgp'
+    }
+    deploy {
+        maven {
+            mavenCentral {
+                sonatype {
+                    active = 'ALWAYS'
+                    url = 'https://central.sonatype.com/api/v1/publisher'
+                    stagingRepository('build/staging-deploy')
+                }
+            }
         }
     }
 }

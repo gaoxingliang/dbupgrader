@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import lombok.*;
 import org.apache.commons.lang3.StringUtils;
 
+@Setter
 @Getter
 public class UpgradeConfiguration {
     /**
@@ -47,7 +48,7 @@ public class UpgradeConfiguration {
 
     public static final String CONFIG_CURRENT_VERSION = "current_version";
 
-    private UpgradeConfiguration() {}
+    public UpgradeConfiguration() {}
 
     public static Builder builder() {
         return new Builder();
@@ -57,17 +58,23 @@ public class UpgradeConfiguration {
         private final UpgradeConfiguration config = new UpgradeConfiguration();
 
         public Builder upgradeClassPackage(String upgradeClassPackage) {
-            config.upgradeClassPackage = upgradeClassPackage;
+            if (upgradeClassPackage != null) {
+                config.upgradeClassPackage = upgradeClassPackage;
+            }
             return this;
         }
 
         public Builder upgradeHistoryTable(String upgradeHistoryTable) {
-            config.upgradeHistoryTable = upgradeHistoryTable;
+            if (upgradeHistoryTable != null) {
+                config.upgradeHistoryTable = upgradeHistoryTable;
+            }
             return this;
         }
 
         public Builder upgradeConfigurationTable(String upgradeConfigurationTable) {
-            config.upgradeConfigurationTable = upgradeConfigurationTable;
+            if (upgradeConfigurationTable != null) {
+                config.upgradeConfigurationTable = upgradeConfigurationTable;
+            }
             return this;
         }
 
@@ -82,12 +89,16 @@ public class UpgradeConfiguration {
         }
 
         public Builder createHistoryTableSql(String createHistoryTableSql) {
-            config.createHistoryTableSql = createHistoryTableSql;
+            if (createHistoryTableSql != null) {
+                config.createHistoryTableSql = createHistoryTableSql;
+            }
             return this;
         }
 
         public Builder createConfigurationTableSql(String createConfigurationTableSql) {
-            config.createConfigurationTableSql = createConfigurationTableSql;
+            if (createConfigurationTableSql != null) {
+                config.createConfigurationTableSql = createConfigurationTableSql;
+            }
             return this;
         }
 
