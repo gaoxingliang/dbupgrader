@@ -28,3 +28,4 @@ replay_pid*
 .idea
 bin
 build/
+/.vscode/settings.json

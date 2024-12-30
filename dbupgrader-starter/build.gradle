@@ -1,0 +1,39 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+group = 'io.github.gaoxingliang'
+version = '0.0.1'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    api 'io.gitee.gaoxingliang:dbupgrader:0.0.2'
+    compileOnly 'org.springframework.boot:spring-boot-starter:2.7.18'
+    compileOnly 'org.springframework.boot:spring-boot-starter-jdbc:2.7.18'
+    compileOnly 'org.springframework.boot:spring-boot-configuration-processor:2.7.18'
+    compileOnly 'org.springframework.boot:spring-boot-autoconfigure:2.7.18'
+    
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+test {
+    useJUnitPlatform()
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+}
