@@ -11,7 +11,7 @@ compileTestJava.options.encoding = "UTF-8"
 apply plugin: 'maven-publish'
 
 group 'io.gitee.gaoxingliang:dbupgrader'
-version '0.0.4'
+version '0.0.5'
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
 
@@ -36,7 +36,7 @@ dependencies {
     implementation group: 'com.google.guava', name: 'guava', version: '33.4.0-jre'
     implementation group: 'commons-io', name: 'commons-io', version: '2.18.0'
     implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.17.0'
-
+    implementation 'com.github.jsqlparser:jsqlparser:4.9'
     implementation 'org.projectlombok:lombok:1.18.36'
     testImplementation 'org.projectlombok:lombok:1.18.36'
 
@@ -86,12 +86,49 @@ publishing {
                 }
             }
         }
+
+        sc(MavenPublication) {
+            groupId = "cn.sichuancredit"
+            artifactId = 'dbmigration'
+            version = project.version
+            from components.java
+        }
     }
 
     repositories {
         maven {
+            name = 'maven'
             url = layout.projectDirectory.dir('build/staging-deploy')
         }
+
+        maven {
+            name = 'sc'
+            url = project.findProperty('SICHUANCREDIT_URL')
+            credentials {
+                username = project.findProperty('SICHUANCREDIT_USERNAME')
+                password = project.findProperty('SICHUANCREDIT_PASSWORD')
+            }
+        }
+    }
+}
+
+// Configure publish task to only handle maven publication
+tasks.named('publish') {
+    dependsOn tasks.withType(PublishToMavenRepository).matching { task ->
+        task.publication.name == 'maven' && task.repository.name == 'maven'
+    }
+}
+
+task publishToCentral {
+    dependsOn tasks.withType(PublishToMavenRepository).matching { task ->
+        task.publication.name == 'maven' && task.repository.name == 'maven'
+    }
+}
+
+// Custom task for SC publication
+task publishToSc {
+    dependsOn tasks.withType(PublishToMavenRepository).matching { task ->
+        task.publication.name == 'sc' && task.repository.name == 'sc'
     }
 }
 
@@ -105,16 +142,6 @@ jreleaser {
     }
     deploy {
         maven {
-//            nexus2 {
-//                'maven-central' {
-//                    active = 'ALWAYS'
-//                    url = 'https://s01.oss.sonatype.org/service/local'
-//                    snapshotUrl = 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
-//                    closeRepository = true
-//                    releaseRepository = true
-//                    stagingRepository('build/staging-deploy'
-//                }
-//            }
             mavenCentral {
                 sonatype {
                     active = 'ALWAYS'

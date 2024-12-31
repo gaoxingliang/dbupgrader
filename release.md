@@ -17,7 +17,7 @@ Now it's manually uploaded by guide [here](https://central.sonatype.org/publish/
 So the commands are:<br>
 ```shell
 ./gradlew clean
-./gradlew publish
+./gradlew publishToCentral
 ./gradlew jreleaserFullRelease
 # upload this bundle zip:
 ls ./build/jreleaser/deploy/mavenCentral/sonatype
@@ -26,3 +26,9 @@ ls ./build/jreleaser/deploy/mavenCentral/sonatype
 publish it to here: https://central.sonatype.com/publishing
 
 It should use gradle command by guide [here](https://jreleaser.org/guide/latest/examples/maven/maven-central.html#_gradle)
+
+# release to sichuancredit nexus
+```shell
+./gradlew clean
+./gradlew publishToSc
+```

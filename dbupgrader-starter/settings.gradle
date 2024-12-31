@@ -1,3 +1,1 @@
 rootProject.name = 'dbupgrader-starter'
-include ':dbupgrader'
-project(':dbupgrader').projectDir = new File('../')

@@ -77,10 +77,21 @@ Use `SqlHelperUtils.executeUpdate` to run the sql.
 ```sql
 CREATE TABLE IF NOT EXISTS XX (id int);
 ```
+or java code `SqlHelperUtils#createTableIfNotExists`
+
 ### add column if not exists
+
 ```sql
 ALTER TABLE XX ADD COLUMN IF NOT EXISTS name VARCHAR(100);
 ```
+
+### insert records if not exists
+
+```sql
+INSERT IGNORE INTO xxx (id, name) values (xx, yy)
+```
+
+or java code:  `SqlHelperUtils#smartInsertWithPKSet`
 
 ## Quick start for springboot
 
@@ -123,11 +134,21 @@ dbupgrader:
 ```
 
 Option b, set the targetVersion in code:
-
+create a bean DbUpgraderConfigurer:
+```java
+    @Bean
+    public DbUpgraderConfigurer dbUpgraderConfigurer() {
+        return new DbUpgraderConfigurer() {
+            @Override
+            public void configureUpgradeProperties(String dataSourceName, DataSource dataSource,
+                                                   DbUpgraderProperties.DataSourceConfig dataSourceConfig) {
+                if (dataSourceName.equals("default")) {
+                    dataSourceConfig.setTargetVersion(DatabaseSchemaVersion.VERSION);
+                }
+            }
+        };
+    }
 ```
-create a bean DbUpgraderConfigurer
-```
-
 
 
 ## UpgradeConfiguration
@@ -144,13 +165,6 @@ source code [UpgradeConfiguration](./src/main/java/io/github/gaoxingliang/dbupgr
 | createConfigurationTableSql | No | CREATE TABLE %s (id BIGINT AUTO_INCREMENT PRIMARY KEY, key_name VARCHAR(100) NOT NULL, value VARCHAR(500) NOT NULL, gmt_create TIMESTAMP DEFAULT CURRENT_TIMESTAMP, gmt_modified TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, UNIQUE KEY uk_key_name (key_name)) | SQL for creating configuration table if not exists. It has a placeholder for the table name if needed. |
 | dryRun | No | false | If true, will only simulate the upgrade without executing |
 | potentialMissVersionCount | No | 10 | In case of we missed some upgrade process, we will recheck recent version records and execute it if missed. for example, two branch may share a same target version and someone merged the branch to master, and upgrade it. while some other still use the old target version, and the upgrade process is missed. Recommendation: if you may have a long-running project/epic/feature, you may want to set this to a larger number.  If <=0, we won't check that. |
-
-
-
-## 
-
-
-
 
 
 ## Development Setup

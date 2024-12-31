@@ -11,7 +11,7 @@ compileTestJava.options.encoding = "UTF-8"
 apply plugin: 'maven-publish'
 
 group 'io.gitee.gaoxingliang:dbupgrader-starter'
-version '0.0.2'
+version '0.0.3'
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
 
@@ -27,10 +27,22 @@ repositories {
     mavenCentral()
 }
 
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/main/java', '../src/main/java']
+        }
+        resources {
+            srcDirs = ['src/main/resources', '../src/main/resources']
+        }
+    }
+}
+
 dependencies {
-    // api 'io.gitee.gaoxingliang:dbupgrader:0.0.3'
-    implementation project(':dbupgrader')
-    // implementation files("/Users/edward/projects/dbupgrader/build/libs/dbupgrader-0.0.3.jar")
+    implementation group: 'com.google.guava', name: 'guava', version: '33.4.0-jre'
+    implementation group: 'commons-io', name: 'commons-io', version: '2.18.0'
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.17.0'
+    implementation 'com.github.jsqlparser:jsqlparser:4.9'
     compileOnly 'org.springframework.boot:spring-boot-starter:2.7.18'
     compileOnly 'org.springframework.boot:spring-boot-starter-jdbc:2.7.18'
     compileOnly 'org.springframework.boot:spring-boot-configuration-processor:2.7.18'
@@ -87,8 +99,38 @@ publishing {
 
     repositories {
         maven {
+            name = 'maven'
             url = layout.projectDirectory.dir('build/staging-deploy')
         }
+
+        maven {
+            name = 'sc'
+            url = project.findProperty('SICHUANCREDIT_URL')
+            credentials {
+                username = project.findProperty('SICHUANCREDIT_USERNAME')
+                password = project.findProperty('SICHUANCREDIT_PASSWORD')
+            }
+        }
+    }
+}
+
+// Configure publish task to only handle maven publication
+tasks.named('publish') {
+    dependsOn tasks.withType(PublishToMavenRepository).matching { task ->
+        task.publication.name == 'maven' && task.repository.name == 'maven'
+    }
+}
+
+task publishToCentral {
+    dependsOn tasks.withType(PublishToMavenRepository).matching { task ->
+        task.publication.name == 'maven' && task.repository.name == 'maven'
+    }
+}
+
+// Custom task for SC publication
+task publishToSc {
+    dependsOn tasks.withType(PublishToMavenRepository).matching { task ->
+        task.publication.name == 'sc' && task.repository.name == 'sc'
     }
 }
 
