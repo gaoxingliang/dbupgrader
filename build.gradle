@@ -1,3 +1,22 @@
+buildscript {
+    repositories {
+        println "aliyun repositories  from init.gradle"
+        maven { url 'https://maven.aliyun.com/repository/google' }
+        maven { url 'https://maven.aliyun.com/repository/central' }
+        maven { url 'https://maven.aliyun.com/repository/public' }
+        mavenCentral()
+    }
+
+    allprojects {
+        println "aliyun allprojects ${project.name}  from init.gradle"
+        repositories {
+            maven { url 'https://maven.aliyun.com/repository/google' }
+            maven { url 'https://maven.aliyun.com/repository/central' }
+            maven { url 'https://maven.aliyun.com/repository/public' }
+        }
+    }
+}
+
 plugins {
     id 'java'
     id 'java-library'
@@ -11,7 +30,7 @@ compileTestJava.options.encoding = "UTF-8"
 apply plugin: 'maven-publish'
 
 group 'io.gitee.gaoxingliang:dbupgrader'
-version '0.0.5'
+version '0.0.6'
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
 

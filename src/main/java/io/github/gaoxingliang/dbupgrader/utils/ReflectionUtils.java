@@ -59,7 +59,9 @@ public class ReflectionUtils {
         while (entries.hasMoreElements()) {
             JarEntry entry = entries.nextElement();
             String name = entry.getName();
-
+            if (name.startsWith("BOOT-INF/classes")) {
+                name = name.substring("BOOT-INF/classes".length() + 1);
+            }
             // 检查是否是指定包下的类文件
             if (name.startsWith(path) && name.endsWith(".class")) {
                 // 转换为类名

@@ -37,12 +37,11 @@ Add the following to your `application.yml` or `application.properties`:
 ```yaml
 dbupgrader:
   enabled: true
-  upgrade-class-package: com.example.upgrades
-  target-version: 1
-  upgrade-history-table: db_upgrade_history
-  upgrade-configuration-table: db_upgrade_configuration
-  dry-run: false
-  potential-miss-version-count: 10
+  data-sources:
+    default:
+      enabled: true
+      upgrade-class-package: com.example.upgrades
+      target-version: 1
 ```
 
 ### Multiple Datasource Configuration
@@ -81,68 +80,12 @@ public class V1CreateUserTable implements UpgradeProcess {
 
 ## Configuration Properties
 
-| Property | Description | Default |
-|----------|-------------|---------|
-| `dbupgrader.enabled` | Enable/disable auto-configuration | true |
-| `dbupgrader.upgrade-class-package` | Package containing upgrade classes | - |
-| `dbupgrader.target-version` | Target version to upgrade to | - |
-| `dbupgrader.upgrade-history-table` | Table name for upgrade history | db_upgrade_history |
-| `dbupgrader.upgrade-configuration-table` | Table name for upgrade configuration | db_upgrade_configuration |
-| `dbupgrader.dry-run` | Simulate upgrades without executing | false |
-| `dbupgrader.potential-miss-version-count` | Number of recent versions to check for missed upgrades | 10 |
-
-### Datasource-specific Properties
-
-For each datasource under `dbupgrader.data-sources.<name>`:
-
-| Property | Description | Default |
-|----------|-------------|---------|
-| `enabled` | Enable/disable for this datasource | true |
-| `target-version` | Override global target version | - |
-| `upgrade-class-package` | Override global upgrade class package | - |
-
-## Examples
-
-### Single Datasource
-
-```yaml
-spring:
-  datasource:
-    url: jdbc:mysql://localhost:3306/mydb
-    username: user
-    password: pass
-
-dbupgrader:
-  enabled: true
-  upgrade-class-package: com.example.upgrades
-  target-version: 1
-```
-
-### Multiple Datasources
-
-```yaml
-spring:
-  datasource:
-    primary:
-      url: jdbc:mysql://localhost:3306/db1
-      username: user1
-      password: pass1
-    secondary:
-      url: jdbc:mysql://localhost:3306/db2
-      username: user2
-      password: pass2
-
-dbupgrader:
-  enabled: true
-  upgrade-class-package: com.example.upgrades
-  target-version: 1
-  data-sources:
-    primary:
-      enabled: true
-      target-version: 2
-      upgrade-class-package: com.example.upgrades.primary
-    secondary:
-      enabled: true
-      target-version: 1
-      upgrade-class-package: com.example.upgrades.secondary
-``` 
+| Property                                    | Description | Default |
+|---------------------------------------------|-------------|---------|
+| `dbupgrader.enabled`                        | Enable/disable auto-configuration | true |
+| `dbupgrader.*.upgrade-class-package`        | Package containing upgrade classes | - |
+| `dbupgrader.*.target-version`               | Target version to upgrade to | - |
+| `dbupgrader.*.upgrade-history-table`        | Table name for upgrade history | db_upgrade_history |
+| `dbupgrader.*.upgrade-configuration-table`  | Table name for upgrade configuration | db_upgrade_configuration |
+| `dbupgrader.*.dry-run`                      | Simulate upgrades without executing | false |
+| `dbupgrader.*.potential-miss-version-count` | Number of recent versions to check for missed upgrades | 10 |

@@ -29,3 +29,10 @@ replay_pid*
 bin
 build/
 /.vscode/settings.json
+dbupgrader-starter/.gradle
+dbupgrader-starter/.idea
+dbupgrader-starter/build
+dbupgrader-starter-test/.gradle
+dbupgrader-starter-test/.idea
+dbupgrader-starter-test/build
+dbupgrader-starter-test/.run
