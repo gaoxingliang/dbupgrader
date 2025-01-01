@@ -125,12 +125,12 @@ Option a, set the targetVersion in yaml:
 
 ```yaml
 dbupgrader:
-	enabled: true
-	dataSources:
-		default:
-			enabled: true
-			targetVersion: 1
-			upgradeClassPackage: com.example.upgrades.master
+  enabled: true
+  dataSources:
+    default:
+      enabled: true
+      targetVersion: 1
+      upgradeClassPackage: com.example.upgrades.master
 ```
 
 Option b, set the targetVersion in code:
