@@ -145,8 +145,9 @@ public class SqlHelperUtils {
      * @param connection Database connection
      * @param sql        INSERT SQL statement
      * @throws SQLException if a database access error occurs
+     * @return whether the record is inserted
      */
-    public void smartInsertWithPKSet(Connection connection, String sql) throws SQLException {
+    public boolean smartInsertWithPrimaryKeySet(Connection connection, String sql) throws SQLException {
         try {
             // Parse the INSERT statement
             net.sf.jsqlparser.statement.Statement statement = CCJSqlParserUtil.parse(sql);
@@ -169,35 +170,66 @@ public class SqlHelperUtils {
                         tableName));
             }
 
-            // Get columns and values from the INSERT statement
-            List<String> columns =
-                    insert.getColumns().stream().map(column -> column.getColumnName().toLowerCase()).collect(Collectors.toList());
-
-            ExpressionList<?> values = insert.getValues().getExpressions();
-
-            // Build WHERE clause for checking existence
-            StringBuilder existenceCheck = new StringBuilder("SELECT count(1) FROM " + tableName + " WHERE ");
-            List<String> whereClauses = new ArrayList<>();
-            List<Object> whereArgs = new ArrayList<>();
-            for (String pkColumn : pkColumns) {
-                int valueIndex = columns.indexOf(pkColumn);
-                if (valueIndex == -1) {
-                    throw new SQLException("Primary key column " + pkColumn + " not found in INSERT statement");
-                }
-                whereClauses.add(pkColumn + " = ? ");
-                whereArgs.add(map2Value(values.get(valueIndex)));
-            }
-            existenceCheck.append(String.join(" AND ", whereClauses));
-
-            // Check if record exists
-            int count = query(connection, existenceCheck.toString(), rs -> rs.getInt(1), whereArgs.toArray());
-            if (count == 0) {
-                executeUpdate(connection, sql);
-            } else {
-                log.info("Record already exists, skipping insert: " + sql);
-            }
+            return insertIfNotExists(connection, sql, pkColumns.toArray(new String[0]), insert);
         } catch (JSQLParserException e) {
             throw new SQLException("Failed to parse SQL statement: " + sql, e);
+        }
+    }
+
+    /**
+     * Automatically insert if the record doesn't exist.
+     * Parse the sql, automatically check whether the record exists by usingg the input uniqueColumns
+     * @param connection
+     * @param sql
+     * @param uniqueColumns
+     * @return whether the record is inserted
+     * @throws SQLException
+     */
+    public boolean smartInsertWithUniqueColumns(Connection connection, String sql, String ...uniqueColumns) throws SQLException {
+        try {
+            // Parse the INSERT statement
+            net.sf.jsqlparser.statement.Statement statement = CCJSqlParserUtil.parse(sql);
+            if (!(statement instanceof Insert)) {
+                throw new SQLException("This method only support insert sql");
+            }
+            if (uniqueColumns == null || uniqueColumns.length == 0) {
+                throw new SQLException("The unique columns is empty");
+            }
+            Insert insert = (Insert) statement;
+            return insertIfNotExists(connection, sql, uniqueColumns, insert);
+        } catch (JSQLParserException e) {
+            throw new SQLException("Failed to parse SQL statement: " + sql, e);
+        }
+    }
+
+    private static boolean insertIfNotExists(Connection connection, String sql, String[] uniqueColumns, Insert insert) throws SQLException {
+        // Get columns and values from the INSERT statement
+        List<String> columns =
+                insert.getColumns().stream().map(column -> column.getColumnName().toLowerCase()).collect(Collectors.toList());
+        ExpressionList<?> values = insert.getValues().getExpressions();
+        String tableName = insert.getTable().getName();
+        // Build WHERE clause for checking existence
+        StringBuilder existenceCheck = new StringBuilder("SELECT count(1) FROM " + tableName + " WHERE ");
+        List<String> whereClauses = new ArrayList<>();
+        List<Object> whereArgs = new ArrayList<>();
+        for (String uniqueColumn : uniqueColumns) {
+            int valueIndex = columns.indexOf(uniqueColumn.toLowerCase());
+            if (valueIndex == -1) {
+                throw new SQLException("Column " + uniqueColumn + " value not found in INSERT statement");
+            }
+            whereClauses.add(uniqueColumn + " = ? ");
+            whereArgs.add(map2Value(values.get(valueIndex)));
+        }
+        existenceCheck.append(String.join(" AND ", whereClauses));
+
+        // Check if record exists
+        int count = query(connection, existenceCheck.toString(), rs -> rs.getInt(1), whereArgs.toArray());
+        if (count == 0) {
+            executeUpdate(connection, sql);
+            return true;
+        } else {
+            log.info("Record already exists, skipping insert: " + sql);
+            return false;
         }
     }
 

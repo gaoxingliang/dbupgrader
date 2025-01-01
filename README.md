@@ -91,7 +91,7 @@ ALTER TABLE XX ADD COLUMN IF NOT EXISTS name VARCHAR(100);
 INSERT IGNORE INTO xxx (id, name) values (xx, yy)
 ```
 
-or java code:  `SqlHelperUtils#smartInsertWithPKSet`
+or java code:  `SqlHelperUtils#smartInsertWithPrimaryKeySet`
 
 ## Quick start for springboot
 
