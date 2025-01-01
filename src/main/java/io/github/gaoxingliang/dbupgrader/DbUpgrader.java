@@ -39,7 +39,7 @@ public class DbUpgrader {
         }
         conn.commit();
         SqlHelperUtils.closeQuietly(conn);
-
+        log.info("Scanned total versions: " + upgradeList.size());
         if (upgradeConfiguration.getPotentialMissVersionCount() > 0) {
             checkPotentialMissedUpgrade(currentVer, upgradeList);
         }
