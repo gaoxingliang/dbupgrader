@@ -8,6 +8,7 @@ import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.expression.operators.relational.*;
 import net.sf.jsqlparser.parser.*;
 import net.sf.jsqlparser.statement.insert.*;
+import org.apache.commons.lang3.*;
 
 import java.sql.*;
 import java.util.*;
@@ -155,11 +156,13 @@ public class SqlHelperUtils {
                 throw new SQLException("This method only support insert sql");
             }
             Insert insert = (Insert) statement;
+            insert.getTable().getSchemaName();
             String tableName = insert.getTable().getName();
 
             // Get primary key columns for the table
             List<String> pkColumns = new ArrayList<>();
-            try (ResultSet rs = connection.getMetaData().getPrimaryKeys(null, null, tableName)) {
+            try (ResultSet rs = connection.getMetaData().getPrimaryKeys(
+                    ObjectUtils.firstNonNull(insert.getTable().getSchemaName(), connection.getCatalog()), null, tableName)) {
                 while (rs.next()) {
                     pkColumns.add(rs.getString("COLUMN_NAME").toLowerCase());
                 }
