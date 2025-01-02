@@ -25,8 +25,7 @@ Gradle:
 
 ```groovy
 dependencies {
-   // https://mvnrepository.com/artifact/io.gitee.gaoxingliang/dbupgrader
-	implementation group: 'io.gitee.gaoxingliang', name: 'dbupgrader', version: '0.0.1'
+	implementation group: 'io.gitee.gaoxingliang', name: 'dbupgrader', version: '${version}'
 }
 ```
 
@@ -37,7 +36,7 @@ Mvn:
 <dependency>
     <groupId>io.gitee.gaoxingliang</groupId>
     <artifactId>dbupgrader</artifactId>
-    <version>0.0.1</version>
+    <version>${version}</version>
 </dependency>
 ```
 

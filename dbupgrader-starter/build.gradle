@@ -109,6 +109,13 @@ publishing {
                 }
             }
         }
+
+        sc(MavenPublication) {
+            groupId = "cn.sichuancredit"
+            artifactId = 'dbmigration-starter'
+            version = project.version
+            from components.java
+        }
     }
 
     repositories {
