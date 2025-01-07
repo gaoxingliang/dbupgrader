@@ -1,6 +1,7 @@
 package io.github.gaoxingliang.dbupgrader;
 
 import io.github.gaoxingliang.dbupgrader.utils.*;
+import io.github.gaoxingliang.dbupgrader.stats.*;
 import lombok.extern.java.*;
 import org.apache.commons.lang3.*;
 
@@ -43,9 +44,11 @@ public class DbUpgrader {
         if (upgradeConfiguration.getPotentialMissVersionCount() > 0) {
             checkPotentialMissedUpgrade(currentVer, upgradeList);
         }
-
-        log.info("Will try to upgrade from " + currentVer + " to " + targetVer);
-
+        if (currentVer > targetVer) {
+            log.warning("Current version is " + currentVer + ", which is larger than target version " + targetVer + ". Do you forget to increase the version number? ");
+        } else {
+            log.info("Will try to upgrade from " + currentVer + " to " + targetVer);
+        }
         // 2 check and do upgrades
         // any version left and is not processed?
         while (currentVer <= targetVer) {
@@ -134,7 +137,7 @@ public class DbUpgrader {
         // Execute upgrades in order
         Connection conn = null;
         try {
-            conn = dataSource.getConnection();
+            conn = StatisticsTrackingConnectionFactory.createConnection(dataSource.getConnection());
             conn.setAutoCommit(false);
 
             for (String className : sortedClasses) {
@@ -151,6 +154,18 @@ public class DbUpgrader {
                     UpgradeProcess upgrade = (UpgradeProcess) instance;
                     try {
                         upgrade.upgrade(this, conn);
+                        // Get statistics after upgrade
+                        SqlExecutionStats stats = StatisticsTrackingConnectionFactory.getStats(conn);
+                        if (stats != null) {
+                            log.info("Upgrade statistics for " + className + ": " + stats);
+                            // Check maxAffectRecords from annotation
+                            DbUpgrade upgradeAnnotation = (DbUpgrade) clazz.getDeclaredAnnotation(DbUpgrade.class);
+                            if (upgradeAnnotation != null && stats.getTotalAffectedRecords() > upgradeAnnotation.maxAffectRecords()) {
+                                throw new SQLException("Upgrade affected " + stats.getTotalAffectedRecords() + 
+                                    " records, which exceeds the maximum limit of " + upgradeAnnotation.maxAffectRecords() + ". Please set the maxAffectRecords in the @DbUpgrade.");
+                            }
+                            stats.reset();
+                        }
                         // Record successful upgrade
                         SqlHelperUtils.executeUpdate(conn, "insert into " + upgradeConfiguration.getUpgradeHistoryTable() + "(class_name)" +
                                 " values (?)", clazz.getName());

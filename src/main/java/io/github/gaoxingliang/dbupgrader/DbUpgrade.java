@@ -20,4 +20,11 @@ public @interface DbUpgrade {
      * @return
      */
     String after() default "";
+
+    /**
+     * how many records this upgradeprocess may affect.
+     * If the script update records more than this, it will rollback and throw an exception.
+     * @return
+     */
+    int maxAffectRecords() default 100;
 }
