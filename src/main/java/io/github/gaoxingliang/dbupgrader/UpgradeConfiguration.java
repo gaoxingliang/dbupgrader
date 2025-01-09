@@ -28,6 +28,7 @@ public class UpgradeConfiguration {
     private String upgradeConfigurationTable = "db_upgrade_configuration";
     private String createHistoryTableSql = "CREATE TABLE %s (" +
             "id BIGINT AUTO_INCREMENT PRIMARY KEY, " +
+            "application VARCHAR(100) NOT NULL, " +
             "class_name VARCHAR(200) NOT NULL, " +
             "gmt_create TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
             "UNIQUE KEY uk_class_name (class_name)" +

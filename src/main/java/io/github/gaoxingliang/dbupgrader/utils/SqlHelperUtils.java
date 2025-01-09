@@ -1,5 +1,6 @@
 package io.github.gaoxingliang.dbupgrader.utils;
 
+import com.google.common.base.*;
 import io.github.gaoxingliang.dbupgrader.*;
 import lombok.experimental.*;
 import lombok.extern.java.*;
@@ -7,6 +8,7 @@ import net.sf.jsqlparser.*;
 import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.expression.operators.relational.*;
 import net.sf.jsqlparser.parser.*;
+import net.sf.jsqlparser.statement.alter.*;
 import net.sf.jsqlparser.statement.insert.*;
 import org.apache.commons.lang3.*;
 
@@ -76,6 +78,41 @@ public class SqlHelperUtils {
             }
             return ps.executeUpdate();
         }
+    }
+
+    public boolean smartAddColumn(Connection conn, String sql) throws SQLException {
+        // Parse the INSERT statement
+        net.sf.jsqlparser.statement.Statement statement = null;
+        try {
+            statement = CCJSqlParserUtil.parse(sql);
+        } catch (JSQLParserException e) {
+            throw new RuntimeException(e);
+        }
+        if (!(statement instanceof Alter)) {
+            throw new SQLException("This method only support alter sql");
+        }
+        Alter alter = (Alter) statement;
+        String tableName = alter.getTable().getName();
+        Preconditions.checkArgument(alter.getAlterExpressions().size() == 1, "Only support one alter expression");
+        AlterExpression alterExpr = alter.getAlterExpressions().get(0);
+        AlterOperation alterOps = alterExpr.getOperation();
+        Preconditions.checkArgument(alterOps.name().equalsIgnoreCase("ADD"), "Only support ADD COLUMN operation");
+        // allown add one column each time.
+        List<AlterExpression.ColumnDataType> columns = alterExpr.getColDataTypeList();
+        Preconditions.checkArgument(columns.size() == 1, "Only support add one column each time");
+        AlterExpression.ColumnDataType colDataType =  columns.get(0);
+        String column = colDataType.getColumnName();
+        // check whether the column exists
+        try (ResultSet rs = conn.getMetaData().getColumns(ObjectUtils.firstNonNull(alter.getTable().getSchemaName(),
+                conn.getCatalog()), null, tableName, column)) {
+            if (rs.next()) {
+                log.info("Column already exists, skipping add column: " + sql);
+                return false;
+            }
+        }
+
+        executeUpdate(conn, sql);
+        return true;
     }
 
     /**

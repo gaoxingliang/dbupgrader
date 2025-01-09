@@ -172,8 +172,8 @@ public class DbUpgrader {
                             stats.reset();
                         }
                         // Record successful upgrade
-                        SqlHelperUtils.executeUpdate(conn, "insert into " + upgradeConfiguration.getUpgradeHistoryTable() + "(class_name)" +
-                                " values (?)", clazz.getName());
+                        SqlHelperUtils.executeUpdate(conn, "insert into " + upgradeConfiguration.getUpgradeHistoryTable() + "(application, class_name)" +
+                                " values (?, ?)", upgradeConfiguration.getApplication(), clazz.getName());
                         log.info("Executed a new class " + className);
                     } catch (Exception e) {
                         log.severe("Failed to execute upgrade for class: " + className);
@@ -221,7 +221,7 @@ public class DbUpgrader {
 
     private boolean isUpgradeExecuted(Connection conn, String className) throws SQLException {
         String executed = SqlHelperUtils.query(conn, "select class_name from " + upgradeConfiguration.getUpgradeHistoryTable() + " where " +
-                "class_name = ?", rs -> rs.getString(1), className);
+                "application=? and class_name = ?", rs -> rs.getString(1), upgradeConfiguration.getApplication(), className);
 
         return executed != null;
     }
