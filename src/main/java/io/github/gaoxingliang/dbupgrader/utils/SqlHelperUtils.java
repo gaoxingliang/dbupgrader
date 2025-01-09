@@ -145,8 +145,8 @@ public class SqlHelperUtils {
      *
      * @param connection Database connection
      * @param sql        INSERT SQL statement
-     * @throws SQLException if a database access error occurs
      * @return whether the record is inserted
+     * @throws SQLException if a database access error occurs
      */
     public boolean smartInsertWithPrimaryKeySet(Connection connection, String sql) throws SQLException {
         try {
@@ -156,13 +156,12 @@ public class SqlHelperUtils {
                 throw new SQLException("This method only support insert sql");
             }
             Insert insert = (Insert) statement;
-            insert.getTable().getSchemaName();
             String tableName = insert.getTable().getName();
 
             // Get primary key columns for the table
             List<String> pkColumns = new ArrayList<>();
-            try (ResultSet rs = connection.getMetaData().getPrimaryKeys(
-                    ObjectUtils.firstNonNull(insert.getTable().getSchemaName(), connection.getCatalog()), null, tableName)) {
+            try (ResultSet rs = connection.getMetaData().getPrimaryKeys(ObjectUtils.firstNonNull(insert.getTable().getSchemaName(),
+                    connection.getCatalog()), null, tableName)) {
                 while (rs.next()) {
                     pkColumns.add(rs.getString("COLUMN_NAME").toLowerCase());
                 }
@@ -173,7 +172,7 @@ public class SqlHelperUtils {
                         tableName));
             }
 
-            return insertIfNotExists(connection, sql, pkColumns.toArray(new String[0]), insert);
+            return insertIfNotExists(connection, sql, pkColumns.toArray(new String[0]), insert) > 0;
         } catch (JSQLParserException e) {
             throw new SQLException("Failed to parse SQL statement: " + sql, e);
         }
@@ -182,13 +181,14 @@ public class SqlHelperUtils {
     /**
      * Automatically insert if the record doesn't exist.
      * Parse the sql, automatically check whether the record exists by usingg the input uniqueColumns
+     *
      * @param connection
      * @param sql
      * @param uniqueColumns
      * @return whether the record is inserted
      * @throws SQLException
      */
-    public boolean smartInsertWithUniqueColumns(Connection connection, String sql, String ...uniqueColumns) throws SQLException {
+    public boolean smartInsertWithUniqueColumns(Connection connection, String sql, String... uniqueColumns) throws SQLException {
         try {
             // Parse the INSERT statement
             net.sf.jsqlparser.statement.Statement statement = CCJSqlParserUtil.parse(sql);
@@ -199,41 +199,75 @@ public class SqlHelperUtils {
                 throw new SQLException("The unique columns is empty");
             }
             Insert insert = (Insert) statement;
-            return insertIfNotExists(connection, sql, uniqueColumns, insert);
+            return insertIfNotExists(connection, sql, uniqueColumns, insert) > 0;
         } catch (JSQLParserException e) {
             throw new SQLException("Failed to parse SQL statement: " + sql, e);
         }
     }
 
-    private static boolean insertIfNotExists(Connection connection, String sql, String[] uniqueColumns, Insert insert) throws SQLException {
+    private static int insertIfNotExists(Connection connection, String sql, String[] uniqueColumns, Insert insert) throws SQLException {
         // Get columns and values from the INSERT statement
         List<String> columns =
                 insert.getColumns().stream().map(column -> column.getColumnName().toLowerCase()).collect(Collectors.toList());
         ExpressionList<?> values = insert.getValues().getExpressions();
+        if (values.isEmpty()) {
+            throw new SQLException("No insert values found " + sql);
+        }
+
+        boolean multipleInsert = values.get(0) instanceof ParenthesedExpressionList;
+        List<ExpressionList> multipleInsertValues = new ArrayList<>();
+        if (multipleInsert) {
+            for (int i = 0; i < values.size(); i++) {
+                ParenthesedExpressionList value = (ParenthesedExpressionList) values.get(i);
+                if (value.isEmpty()) {
+                    throw new SQLException("No insert values found " + sql);
+                }
+                multipleInsertValues.add(value);
+            }
+        } else {
+            multipleInsertValues.add(values);
+        }
         String tableName = insert.getTable().getName();
         // Build WHERE clause for checking existence
         StringBuilder existenceCheck = new StringBuilder("SELECT count(1) FROM " + tableName + " WHERE ");
         List<String> whereClauses = new ArrayList<>();
-        List<Object> whereArgs = new ArrayList<>();
         for (String uniqueColumn : uniqueColumns) {
-            int valueIndex = columns.indexOf(uniqueColumn.toLowerCase());
-            if (valueIndex == -1) {
-                throw new SQLException("Column " + uniqueColumn + " value not found in INSERT statement");
-            }
             whereClauses.add(uniqueColumn + " = ? ");
-            whereArgs.add(map2Value(values.get(valueIndex)));
         }
         existenceCheck.append(String.join(" AND ", whereClauses));
-
-        // Check if record exists
-        int count = query(connection, existenceCheck.toString(), rs -> rs.getInt(1), whereArgs.toArray());
-        if (count == 0) {
-            executeUpdate(connection, sql);
-            return true;
-        } else {
-            log.info("Record already exists, skipping insert: " + sql);
-            return false;
+        String existenceCheckSql = existenceCheck.toString();
+        String insertSql = String.format("INSERT INTO %s (%s) VALUES (%s)", insert.getTable().getName(), String.join(",", columns),
+                String.join(",", Collections.nCopies(columns.size(), "?")));
+        int insertCount = 0;
+        for (ExpressionList exprList : multipleInsertValues) {
+            // compose args
+            List<Object> whereArgs = new ArrayList<>();
+            for (String uniqueColumn : uniqueColumns) {
+                int valueIndex = columns.indexOf(uniqueColumn.toLowerCase());
+                if (valueIndex == -1) {
+                    throw new SQLException("Column " + uniqueColumn + " value not found in INSERT statement");
+                }
+                whereArgs.add(map2Value((Expression) exprList.get(valueIndex)));
+            }
+            // Check if record exists
+            if (recordExists(connection, existenceCheckSql, whereArgs)) {
+                log.info("Record already exists, skipping insert: " + sql + "with args:" + whereArgs);
+            } else {
+                // insert args
+                List<Object> insertArgs = new ArrayList<>();
+                for (int i = 0; i < columns.size(); i++) {
+                    insertArgs.add(map2Value((Expression) exprList.get(i)));
+                }
+                executeUpdate(connection, insertSql, insertArgs.toArray());
+                insertCount++;
+            }
         }
+
+        return insertCount;
+    }
+
+    private static boolean recordExists(Connection connection, String sql, List<Object> whereArgs) throws SQLException {
+        return query(connection, sql, rs -> rs.getInt(1), whereArgs.toArray()) > 0;
     }
 
     private Object map2Value(Expression expr) throws SQLException {

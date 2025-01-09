@@ -13,5 +13,6 @@ public class V3SmartInsert implements UpgradeProcess{
         SqlHelperUtils.smartInsertWithPrimaryKeySet(connection, "insert into students (id, name) values (1, 'Tom')");
         // should no error.
         SqlHelperUtils.smartInsertWithPrimaryKeySet(connection, "insert into students (id, name) values (1, 'Tom')");
+        SqlHelperUtils.smartInsertWithPrimaryKeySet(connection, "insert into students (id, name) values (2, 'Tom2'), (3, 'Tom3')");
     }
 }

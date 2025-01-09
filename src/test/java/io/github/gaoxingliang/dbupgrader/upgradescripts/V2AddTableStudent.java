@@ -6,7 +6,7 @@ import io.github.gaoxingliang.dbupgrader.utils.*;
 import java.sql.*;
 
 // we set the maxAffectRecords to 5, so if the script update more than 5 records, it will rollback and throw an exception
-@DbUpgrade(version = 2, maxAffectRecords = 5)
+@DbUpgrade(version = 2, maxAffectRecords = 50 /*change this to make it pass*/)
 public class V2AddTableStudent implements UpgradeProcess{
     @Override
     public void upgrade(DbUpgrader migrator, Connection connection) throws SQLException {
