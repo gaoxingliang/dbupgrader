@@ -18,6 +18,7 @@ public class DbUpgradeExample {
         UpgradeConfiguration configuration = UpgradeConfiguration.builder()
                 .upgradeClassPackage("io.github.gaoxingliang.dbupgrader.upgradescripts")
                 .targetVersion(3)
+                .application("server")
                 .build();
 
         // Create and run the upgrader

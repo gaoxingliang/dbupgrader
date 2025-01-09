@@ -45,7 +45,8 @@ public class DbUpgrader {
             checkPotentialMissedUpgrade(currentVer, upgradeList);
         }
         if (currentVer > targetVer) {
-            log.warning("Current version is " + currentVer + ", which is larger than target version " + targetVer + ". Do you forget to increase the version number? ");
+            log.warning("Current version is " + currentVer + ", which is larger than target version " + targetVer + ". Do you forget to " +
+                    "increase the version number? ");
         } else {
             log.info("Will try to upgrade from " + currentVer + " to " + targetVer);
         }
@@ -162,7 +163,8 @@ public class DbUpgrader {
                             DbUpgrade upgradeAnnotation = (DbUpgrade) clazz.getDeclaredAnnotation(DbUpgrade.class);
                             if (upgradeAnnotation != null && upgradeAnnotation.maxAffectRecords() > 0 && stats.getTotalAffectedRecords() > upgradeAnnotation.maxAffectRecords()) {
                                 throw new SQLException(
-                                        String.format("Upgrade affected %d records, which exceeds the maximum limit of %d. Please increase the" +
+                                        String.format("Upgrade affected %d records, which exceeds the maximum limit of %d. Please " +
+                                                        "increase the" +
                                                         " maxAffectRecords or set it to -1 (no limit) in the @DbUpgrade.",
                                                 stats.getTotalAffectedRecords(), upgradeAnnotation.maxAffectRecords())
                                 );
@@ -203,9 +205,13 @@ public class DbUpgrader {
             log.info("Will tick version to " + ver);
         } else {
             SqlHelperUtils.executeUpdate(conn, "update " + upgradeConfiguration.getUpgradeConfigurationTable() + " set value = ? where " +
-                    "key_name=?", ver + "", UpgradeConfiguration.CONFIG_CURRENT_VERSION);
+                    "key_name=?", ver + "", getVersionKey());
             log.info("Tick version to " + ver);
         }
+    }
+
+    private String getVersionKey() {
+        return UpgradeConfiguration.CONFIG_CURRENT_VERSION + "-" + upgradeConfiguration.getApplication();
     }
 
     private void createUpgradeHistoryTableIfNotExists(Connection conn, String tableName) throws SQLException {
@@ -228,12 +234,12 @@ public class DbUpgrader {
 
     private int getCurrentVersion(Connection conn) throws SQLException {
         String ver = SqlHelperUtils.query(conn, "select value from " + upgradeConfiguration.getUpgradeConfigurationTable() + " where " +
-                "key_name = ?", rs -> rs.getString(1), UpgradeConfiguration.CONFIG_CURRENT_VERSION);
+                "key_name = ?", rs -> rs.getString(1), getVersionKey());
         int version = 0;
         if (ver == null) {
             version = 0;
             SqlHelperUtils.insertWithIdReturned(conn, "insert into " + upgradeConfiguration.getUpgradeConfigurationTable() + "(key_name, " +
-                    "value) values (?, ?)", UpgradeConfiguration.CONFIG_CURRENT_VERSION, version + "");
+                    "value) values (?, ?)", getVersionKey(), version + "");
         } else {
             version = Integer.parseInt(ver);
         }

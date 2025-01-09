@@ -15,6 +15,11 @@ public class UpgradeConfiguration {
      * should > 0
      */
     private Integer targetVersion;
+    /**
+     * Application name should be unique in your organization.
+     * To avoid issues when different projects use same database.
+     */
+    private String application;
 
     /**
      * optional
@@ -61,6 +66,11 @@ public class UpgradeConfiguration {
             if (upgradeClassPackage != null) {
                 config.upgradeClassPackage = upgradeClassPackage;
             }
+            return this;
+        }
+
+        public Builder application(String application) {
+            config.application = application;
             return this;
         }
 
@@ -115,6 +125,7 @@ public class UpgradeConfiguration {
                 "targetVersion must be set");
             Preconditions.checkArgument(config.targetVersion > 0,
                 "targetVersion must be > 0");
+            Preconditions.checkArgument(StringUtils.isNotEmpty(config.application), "application should be set. eg: server");
             Preconditions.checkArgument(StringUtils.isNotEmpty(config.upgradeHistoryTable), 
                 "upgradeHistoryTable must not be empty");
             Preconditions.checkArgument(StringUtils.isNotEmpty(config.upgradeConfigurationTable), 
@@ -123,7 +134,6 @@ public class UpgradeConfiguration {
                     "createConfigurationTableSql must not be empty");
             Preconditions.checkArgument(StringUtils.isNotEmpty(config.createHistoryTableSql),
                     "createHistoryTableSql must not be empty");
-
             return config;
         }
     }

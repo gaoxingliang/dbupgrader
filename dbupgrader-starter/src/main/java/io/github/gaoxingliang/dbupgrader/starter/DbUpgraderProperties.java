@@ -15,6 +15,12 @@ public class DbUpgraderProperties {
      */
     private Map<String, DataSourceConfig> dataSources;
 
+    /**
+     * Application name should be unique in your organization.
+     * To avoid issues when different projects use same database.
+     */
+    private String application;
+
     @Data
     public static class DataSourceConfig {
         /**

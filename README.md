@@ -125,6 +125,7 @@ Option a, set the targetVersion in yaml:
 ```yaml
 dbupgrader:
   enabled: true
+  application: server
   dataSources:
     default:
       enabled: true
@@ -158,6 +159,7 @@ source code [UpgradeConfiguration](./src/main/java/io/github/gaoxingliang/dbupgr
 | ---- | -------- | ------------- | ------- |
 | upgradeClassPackage | Yes | - | Package path where upgrade classes are located |
 | targetVersion | Yes | - | Target version number to upgrade to (must be > 0) |
+| application | Yes | - | Set a reasonable application name eg `user-server`. This will help when different services share same database. |
 | upgradeHistoryTable | No | db_upgrade_history | Table name for storing upgrade history |
 | upgradeConfigurationTable | No | db_upgrade_configuration | Table name for storing upgrade configuration |
 | createHistoryTableSql | No | CREATE TABLE %s (id BIGINT AUTO_INCREMENT PRIMARY KEY, class_name VARCHAR(200) NOT NULL, gmt_create TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE KEY uk_class_name (class_name)) | SQL for creating history table if not exists. It has a placeholder for the table name if needed. |

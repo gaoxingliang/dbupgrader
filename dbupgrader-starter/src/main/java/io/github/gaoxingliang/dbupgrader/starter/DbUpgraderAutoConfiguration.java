@@ -77,9 +77,7 @@ public class DbUpgraderAutoConfiguration {
             configurer.configureUpgradeProperties("default", dataSource, config);
 
             try {
-                UpgradeConfiguration upgradeConfig =
-                        UpgradeConfiguration.builder().upgradeClassPackage(config.getUpgradeClassPackage()).targetVersion(config.getTargetVersion()).upgradeHistoryTable(config.getUpgradeHistoryTable()).upgradeConfigurationTable(config.getUpgradeConfigurationTable()).dryRun(config.isDryRun()).potentialMissVersionCount(config.getPotentialMissVersionCount()).build();
-
+                UpgradeConfiguration upgradeConfig = fromConfig(config, properties);
                 DbUpgrader upgrader = new DbUpgrader("default", dataSource, upgradeConfig);
                 upgrader.upgrade();
             } catch (Exception e) {
@@ -141,9 +139,7 @@ public class DbUpgraderAutoConfiguration {
                 configurer.configureUpgradeProperties(dataSourceName, targetDataSource, config);
 
                 try {
-                    UpgradeConfiguration upgradeConfig =
-                            UpgradeConfiguration.builder().upgradeClassPackage(config.getUpgradeClassPackage()).targetVersion(config.getTargetVersion()).upgradeHistoryTable(config.getUpgradeHistoryTable()).upgradeConfigurationTable(config.getUpgradeConfigurationTable()).dryRun(config.isDryRun()).potentialMissVersionCount(config.getPotentialMissVersionCount()).build();
-
+                    UpgradeConfiguration upgradeConfig = fromConfig(config, properties);
                     DbUpgrader upgrader = new DbUpgrader(dataSourceName, targetDataSource, upgradeConfig);
                     upgrader.upgrade();
                 } catch (Exception e) {
@@ -151,5 +147,19 @@ public class DbUpgraderAutoConfiguration {
                 }
             }
         }
+    }
+
+    private static UpgradeConfiguration fromConfig(DbUpgraderProperties.DataSourceConfig config, DbUpgraderProperties props) {
+        return
+                UpgradeConfiguration.builder()
+                        .application(props.getApplication())
+                        .upgradeClassPackage(config.getUpgradeClassPackage())
+                        .targetVersion(config.getTargetVersion())
+                        .upgradeHistoryTable(config.getUpgradeHistoryTable())
+                        .upgradeConfigurationTable(config.getUpgradeConfigurationTable())
+                        .dryRun(config.isDryRun())
+                        .potentialMissVersionCount(config.getPotentialMissVersionCount())
+                        .build();
+
     }
 }
