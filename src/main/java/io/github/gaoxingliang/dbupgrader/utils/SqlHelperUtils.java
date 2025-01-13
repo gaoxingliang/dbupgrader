@@ -280,11 +280,11 @@ public class SqlHelperUtils {
             // compose args
             List<Object> whereArgs = new ArrayList<>();
             for (String uniqueColumn : uniqueColumns) {
-                int valueIndex = columns.indexOf(uniqueColumn.toLowerCase());
+                int valueIndex = searchColumnIndex(columns, uniqueColumn);
                 if (valueIndex == -1) {
-                    throw new SQLException("Column " + uniqueColumn + " value not found in INSERT statement");
+                    throw new SQLException("Column " + uniqueColumn + " value not found in INSERT statement columns " + columns);
                 }
-                whereArgs.add(map2Value((Expression) exprList.get(valueIndex)));
+                whereArgs.add(map2Value((Expression) exprList.get(valueIndex), false));
             }
             // Check if record exists
             if (recordExists(connection, existenceCheckSql, whereArgs)) {
@@ -293,7 +293,7 @@ public class SqlHelperUtils {
                 // insert args
                 List<Object> insertArgs = new ArrayList<>();
                 for (int i = 0; i < columns.size(); i++) {
-                    insertArgs.add(map2Value((Expression) exprList.get(i)));
+                    insertArgs.add(map2Value((Expression) exprList.get(i), true));
                 }
                 executeUpdate(connection, insertSql, insertArgs.toArray());
                 insertCount++;
@@ -307,7 +307,7 @@ public class SqlHelperUtils {
         return query(connection, sql, rs -> rs.getInt(1), whereArgs.toArray()) > 0;
     }
 
-    private Object map2Value(Expression expr) throws SQLException {
+    private Object map2Value(Expression expr, boolean possibleNull) throws SQLException {
         if (expr instanceof StringValue) {
             return ((StringValue) expr).getValue();
         } else if (expr instanceof LongValue) {
@@ -321,9 +321,26 @@ public class SqlHelperUtils {
         } else if (expr instanceof TimestampValue) {
             return ((TimestampValue) expr).getValue();
         } else if (expr instanceof NullValue) {
-            throw new SQLException("The value is null for the primary key " + expr);
+            if (!possibleNull) {
+                throw new SQLException("The value is null for the primary key " + expr);
+            } else {
+                return null;
+            }
         } else {
             throw new SQLException("Unsupported expression type: " + expr.getClass().getName() + " for primary key " + expr);
         }
+    }
+
+    private int searchColumnIndex(List<String> columns, String columnName) {
+        for (int i = 0; i < columns.size(); i++) {
+            String currentCol = columns.get(i);
+            if (currentCol.equalsIgnoreCase(columnName) ||
+                    currentCol.equalsIgnoreCase(String.format("`%s`", columnName))
+                    || columnName.equalsIgnoreCase(String.format("`%s`", currentCol))) {
+                return i;
+            }
+        }
+
+        return -1;
     }
 }

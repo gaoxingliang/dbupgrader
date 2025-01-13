@@ -12,7 +12,7 @@ public class V1AddTableUser implements UpgradeProcess{
         SqlHelperUtils.createTableIfNotExists(
                 connection,
                 "test_user",
-                "create table test_user (id int)"
+                "create table test_user (id int primary key)"
         );
     }
 }

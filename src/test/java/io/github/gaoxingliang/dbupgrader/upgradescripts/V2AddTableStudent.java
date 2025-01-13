@@ -13,8 +13,8 @@ public class V2AddTableStudent implements UpgradeProcess{
         System.out.println("Add a new table dummy for V2AddTableStudent ");
         int maxInsert = 10;
         for (int i = 0; i < maxInsert; i++) {
-            SqlHelperUtils.executeUpdate(connection,
-                    String.format("insert into test_user values (%d)", 123 + i));
+            SqlHelperUtils.smartInsertWithPrimaryKeySet(connection,
+                    String.format("insert into test_user (`id`) values (%d)", 123 + i));
         }
     }
 }
