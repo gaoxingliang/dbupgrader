@@ -265,16 +265,17 @@ public class SqlHelperUtils {
             multipleInsertValues.add(values);
         }
         String tableName = insert.getTable().getName();
+        String fullTableName = ObjectUtils.firstNonNull(insert.getTable().getSchemaName(), connection.getCatalog()) + "." + tableName;
         // Build WHERE clause for checking existence
-        StringBuilder existenceCheck = new StringBuilder("SELECT count(1) FROM " + tableName + " WHERE ");
+        StringBuilder existenceCheck = new StringBuilder("SELECT count(1) FROM " + fullTableName + " WHERE ");
         List<String> whereClauses = new ArrayList<>();
         for (String uniqueColumn : uniqueColumns) {
             whereClauses.add(uniqueColumn + " = ? ");
         }
         existenceCheck.append(String.join(" AND ", whereClauses));
         String existenceCheckSql = existenceCheck.toString();
-        String insertSql = String.format("INSERT INTO %s (%s) VALUES (%s)", insert.getTable().getName(), String.join(",", columns),
-                String.join(",", Collections.nCopies(columns.size(), "?")));
+        // the last %s will be replaced for each other during insert later
+        String insertSqlNoValuesFormat = String.format("INSERT INTO %s (%s) VALUES ", fullTableName, String.join(",", columns)) + "%s";
         int insertCount = 0;
         for (ExpressionList exprList : multipleInsertValues) {
             // compose args
@@ -290,12 +291,7 @@ public class SqlHelperUtils {
             if (recordExists(connection, existenceCheckSql, whereArgs)) {
                 log.info("Record already exists, skipping insert: " + sql + "with args:" + whereArgs);
             } else {
-                // insert args
-                List<Object> insertArgs = new ArrayList<>();
-                for (int i = 0; i < columns.size(); i++) {
-                    insertArgs.add(map2Value((Expression) exprList.get(i), true));
-                }
-                executeUpdate(connection, insertSql, insertArgs.toArray());
+                executeUpdate(connection, String.format(insertSqlNoValuesFormat, exprList.toString()));
                 insertCount++;
             }
         }
@@ -320,14 +316,18 @@ public class SqlHelperUtils {
             return ((TimeValue) expr).getValue();
         } else if (expr instanceof TimestampValue) {
             return ((TimestampValue) expr).getValue();
-        } else if (expr instanceof NullValue) {
+        } else if (expr instanceof Parenthesis) {
+            // maybe the table has one pk column eg id. and value ('123') and id is the value.
+            return map2Value(((Parenthesis) expr).getExpression(), possibleNull);
+        }
+        else if (expr instanceof NullValue) {
             if (!possibleNull) {
                 throw new SQLException("The value is null for the primary key " + expr);
             } else {
                 return null;
             }
         } else {
-            throw new SQLException("Unsupported expression type: " + expr.getClass().getName() + " for primary key " + expr);
+            throw new SQLException("Unsupported expression type: " + expr.getClass().getName() + " for key " + expr);
         }
     }
 
