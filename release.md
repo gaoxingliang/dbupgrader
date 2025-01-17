@@ -16,9 +16,7 @@ gpg files are stored in local vm.
 Now it's manually uploaded by guide [here](https://central.sonatype.org/publish/publish-portal-upload/#switching-to-ossrh-during-portal-early-access).
 So the commands are:<br>
 ```shell
-./gradlew clean
-./gradlew publishToCentral
-./gradlew jreleaserFullRelease
+./gradlew clean && ./gradlew publishToCentral && ./gradlew jreleaserFullRelease
 # upload this bundle zip:
 ls ./build/jreleaser/deploy/mavenCentral/sonatype
 ```
