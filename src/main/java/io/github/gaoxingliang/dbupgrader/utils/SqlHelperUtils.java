@@ -60,6 +60,42 @@ public class SqlHelperUtils {
         return false;
     }
 
+    /**
+     * Check if a column exists in a table
+     *
+     * @param conn Database connection
+     * @param tableName Table name
+     * @param columnName Column name
+     * @return true if column exists, false otherwise
+     * @throws SQLException if a database access error occurs
+     */
+    public boolean columnExists(Connection conn, String tableName, String columnName) throws SQLException {
+        try (ResultSet rs = conn.getMetaData().getColumns(conn.getCatalog(), null, tableName, columnName)) {
+            return rs.next();
+        }
+    }
+
+    /**
+     * Check if an index exists on a table
+     *
+     * @param conn Database connection
+     * @param tableName Table name
+     * @param indexName Index name
+     * @return true if index exists, false otherwise
+     * @throws SQLException if a database access error occurs
+     */
+    public boolean indexExists(Connection conn, String tableName, String indexName) throws SQLException {
+        try (ResultSet rs = conn.getMetaData().getIndexInfo(conn.getCatalog(), null, tableName, false, false)) {
+            while (rs.next()) {
+                String currentIndexName = rs.getString("INDEX_NAME");
+                if (currentIndexName != null && currentIndexName.equalsIgnoreCase(indexName)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
     public void createTableIfNotExists(Connection conn, String tableName, String createTableSql) throws SQLException {
         if (!tableExists(conn, tableName)) {
             try (Statement stmt = conn.createStatement()) {
