@@ -7,6 +7,13 @@ export JRELEASER_DEPLOY_MAVEN_MAVENCENTRAL_SONATYPE_USERNAME=
 export JRELEASER_DEPLOY_MAVEN_MAVENCENTRAL_SONATYPE_PASSWORD=
 ```
 
+gpg tokens are generate by:
+```
+gpg --output public.pgp --armor --export YourMail@outlook.com
+gpg --output private.pgp --armor --export-secret-key YourMail@outlook.com
+```
+and uploaded the public.pgp to: https://keys.openpgp.org/upload
+
 gpg files are stored in local vm.
 ```shell
         publicKey = '/Users/edward/.jreleaser/public.pgp'

@@ -185,3 +185,7 @@ docker run --name test-mysql \
     -p 13306:3306 \
     -d mysql:8.0
 ```
+
+### Internal tables
+- `db_upgrade_history` records all executed scripts
+- `db_upgrade_configuration` records the current version and etc
