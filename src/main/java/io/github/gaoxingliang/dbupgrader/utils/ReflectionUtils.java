@@ -52,7 +52,11 @@ public class ReflectionUtils {
 
     private static void findClassesInJar(URL resource, String path, String packageName, List<Class> classes) throws IOException,
             ClassNotFoundException {
-        String jarPath = resource.getPath().substring(5, resource.getPath().indexOf("!"));
+        // two cases: (note: "jar" is in the protocol. path is like: file://xxxx or nested://xxx)
+        // 1. jar:file:/path/to/jar!/
+        // 2. jar:nested:/path/to/jar!/BOOT-INF/classes!/
+        int realPathStartIndex = resource.getPath().indexOf(":");
+        String jarPath = resource.getPath().substring(realPathStartIndex + 1, resource.getPath().indexOf("!"));
         JarFile jar = new JarFile(URLDecoder.decode(jarPath, StandardCharsets.UTF_8.name()));
 
         Enumeration<JarEntry> entries = jar.entries();
