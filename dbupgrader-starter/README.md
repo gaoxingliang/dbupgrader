@@ -16,7 +16,7 @@ Add the following dependency to your project:
 
 ```xml
 <dependency>
-    <groupId>io.github.gaoxingliang</groupId>
+    <groupId>io.github.codeed</groupId>
     <artifactId>dbupgrader-starter</artifactId>
     <version>${version}</version>
 </dependency>
@@ -25,7 +25,7 @@ Add the following dependency to your project:
 Or with Gradle:
 
 ```groovy
-implementation 'io.github.gaoxingliang:dbupgrader-starter:${version}'
+implementation 'io.github.codeed:dbupgrader-starter:${version}'
 ```
 
 ## Configuration

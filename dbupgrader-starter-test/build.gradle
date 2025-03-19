@@ -28,7 +28,7 @@ compileTestJava.options.encoding = "UTF-8"
 
 apply plugin: 'maven-publish'
 
-group 'io.gitee.gaoxingliang:dbupgrader-starter-test'
+group 'io.gitee.codeed:dbupgrader-starter-test'
 version '0.0.1'
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'

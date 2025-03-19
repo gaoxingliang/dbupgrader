@@ -80,7 +80,7 @@ java {
 publishing {
     publications {
         maven(MavenPublication) {
-            groupId =  "io.gitee.gaoxingliang"
+            groupId =  "io.gitee.codeed"
             artifactId = 'dbupgrader-starter'
 
             from components.java
@@ -88,7 +88,7 @@ publishing {
             pom {
                 name = 'dbupgrader-starter'
                 description = 'A springboot starter for dbupgrader'
-                url = 'https://github.com/gaoxingliang/dbupgrader'
+                url = 'https://github.com/codeed/dbupgrader'
                 inceptionYear = '2024'
                 licenses {
                     license {
@@ -98,14 +98,14 @@ publishing {
                 }
                 developers {
                     developer {
-                        id = 'gaoxingliang'
-                        name = 'gaoxingliang'
+                        id = 'codeed'
+                        name = 'codeed'
                     }
                 }
                 scm {
-                    connection = 'scm:git:https://github.com/gaoxingliang/dbupgrader.git'
-                    developerConnection = 'scm:git:ssh://github.com/gaoxingliang/dbupgrader.git'
-                    url = 'https://github.com/gaoxingliang/dbupgrader'
+                    connection = 'scm:git:https://github.com/codeed/dbupgrader.git'
+                    developerConnection = 'scm:git:ssh://github.com/codeed/dbupgrader.git'
+                    url = 'https://github.com/codeed/dbupgrader'
                 }
             }
         }

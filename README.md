@@ -16,25 +16,25 @@ A lightweight database version management tool that helps you manage database sc
 For each version, different upgrade processes will execute in same transaction. Note in mysql, some ALTER, CREATE sql will trigger a transaction commit automatically.
 
 ## Quick Start
-full example: [DbUpgradeExample](./src/test/java/io/github/gaoxingliang/dbupgrader/DbUpgradeExample.java)
+full example: [DbUpgradeExample](./src/test/java/io/github/codeed/dbupgrader/DbUpgradeExample.java)
 
 ### 1. Add Dependency
-see latest version: [maven central](https://mvnrepository.com/artifact/io.gitee.gaoxingliang/dbupgrader)
+see latest version: [maven central](https://mvnrepository.com/artifact/io.gitee.codeed/dbupgrader)
 
 Gradle:
 
 ```groovy
 dependencies {
-	implementation group: 'io.gitee.gaoxingliang', name: 'dbupgrader', version: '${version}'
+	implementation group: 'io.gitee.codeed', name: 'dbupgrader', version: '${version}'
 }
 ```
 
 Mvn:
 
 ```xml
-<!-- https://mvnrepository.com/artifact/io.gitee.gaoxingliang/dbupgrader -->
+<!-- https://mvnrepository.com/artifact/io.gitee.codeed/dbupgrader -->
 <dependency>
-    <groupId>io.gitee.gaoxingliang</groupId>
+    <groupId>io.gitee.codeed</groupId>
     <artifactId>dbupgrader</artifactId>
     <version>${version}</version>
 </dependency>
@@ -100,23 +100,23 @@ or java code:  `SqlHelperUtils#smartInsertWithPrimaryKeySet`
 
 1、import the springboot starter:
 
-see latest version: [maven central](https://mvnrepository.com/artifact/io.gitee.gaoxingliang/dbupgrader-starter)
+see latest version: [maven central](https://mvnrepository.com/artifact/io.gitee.codeed/dbupgrader-starter)
 
 Gradle:
 
 ```groovy
 dependencies {
-   // https://mvnrepository.com/artifact/io.gitee.gaoxingliang/dbupgrader
-	implementation group: 'io.gitee.gaoxingliang', name: 'dbupgrader-starter', version: '0.0.1'
+   // https://mvnrepository.com/artifact/io.gitee.codeed/dbupgrader
+	implementation group: 'io.gitee.codeed', name: 'dbupgrader-starter', version: '0.0.1'
 }
 ```
 
 Mvn:
 
 ```xml
-<!-- https://mvnrepository.com/artifact/io.gitee.gaoxingliang/dbupgrader -->
+<!-- https://mvnrepository.com/artifact/io.gitee.codeed/dbupgrader -->
 <dependency>
-    <groupId>io.gitee.gaoxingliang</groupId>
+    <groupId>io.gitee.codeed</groupId>
     <artifactId>dbupgrader-starter</artifactId>
     <version>0.0.1</version>
 </dependency>
@@ -157,7 +157,7 @@ create a bean DbUpgraderConfigurer:
 
 ## UpgradeConfiguration
 
-source code [UpgradeConfiguration](./src/main/java/io/github/gaoxingliang/dbupgrader/UpgradeConfiguration.java)
+source code [UpgradeConfiguration](./src/main/java/io/github/codeed/dbupgrader/UpgradeConfiguration.java)
 
 | Name | Required | Default value | Comment |
 | ---- | -------- | ------------- | ------- |
