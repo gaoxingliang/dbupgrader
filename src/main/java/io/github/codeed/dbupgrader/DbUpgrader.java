@@ -35,6 +35,10 @@ public class DbUpgrader {
         for (Class c : classList) {
             DbUpgrade upgrade = (DbUpgrade) c.getDeclaredAnnotation(DbUpgrade.class);
             if (upgrade != null) {
+                if (upgradeConfiguration.getSkipClasses().contains(c.getCanonicalName())) {
+                    log.info("Skip upgrade class because of configruation:" + c.getCanonicalName());
+                    continue;
+                }
                 upgradeList.computeIfAbsent(upgrade.version(), k -> new HashMap<>()).put(c, upgrade);
             }
         }

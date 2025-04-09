@@ -1,8 +1,10 @@
 package io.github.codeed.dbupgrader;
 
-import com.google.common.base.Preconditions;
+import com.google.common.base.*;
 import lombok.*;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.*;
+
+import java.util.*;
 
 @Setter
 @Getter
@@ -20,6 +22,12 @@ public class UpgradeConfiguration {
      * To avoid issues when different projects use same database.
      */
     private String application;
+
+    /**
+     * support to skip some upgrade classes.
+     * full class names. {@link Class#getCanonicalName()}
+     */
+    private List<String> skipClasses = new ArrayList<>();
 
     /**
      * optional
@@ -110,6 +118,16 @@ public class UpgradeConfiguration {
             if (createConfigurationTableSql != null) {
                 config.createConfigurationTableSql = createConfigurationTableSql;
             }
+            return this;
+        }
+
+        /**
+         * Full class name.
+         * @param skipClass
+         * @return
+         */
+        public Builder addSkipClass(String skipClass) {
+            config.skipClasses.add(skipClass.trim());
             return this;
         }
 

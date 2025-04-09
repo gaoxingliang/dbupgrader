@@ -58,5 +58,10 @@ public class DbUpgraderProperties {
          * {@link DbUpgraderConfigurer#configureUpgradeProperties(String, DataSource, DataSourceConfig)}
          */
         private Integer targetVersion;
+
+        /**
+         * skipped upgrade class names {@link Class#getCanonicalName()}
+         */
+        private List<String> skipClasses;
     }
 } 

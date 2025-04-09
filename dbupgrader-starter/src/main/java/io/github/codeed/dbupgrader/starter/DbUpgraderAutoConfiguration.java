@@ -150,16 +150,18 @@ public class DbUpgraderAutoConfiguration {
     }
 
     private static UpgradeConfiguration fromConfig(DbUpgraderProperties.DataSourceConfig config, DbUpgraderProperties props) {
-        return
-                UpgradeConfiguration.builder()
+        UpgradeConfiguration.Builder builder = UpgradeConfiguration.builder()
                         .application(props.getApplication())
                         .upgradeClassPackage(config.getUpgradeClassPackage())
                         .targetVersion(config.getTargetVersion())
                         .upgradeHistoryTable(config.getUpgradeHistoryTable())
                         .upgradeConfigurationTable(config.getUpgradeConfigurationTable())
                         .dryRun(config.isDryRun())
-                        .potentialMissVersionCount(config.getPotentialMissVersionCount())
-                        .build();
+                        .potentialMissVersionCount(config.getPotentialMissVersionCount());
+        if (config.getSkipClasses() != null && !config.getSkipClasses().isEmpty()) {
+            config.getSkipClasses().forEach(builder::addSkipClass);
+        }
 
+        return builder.build();
     }
 }
