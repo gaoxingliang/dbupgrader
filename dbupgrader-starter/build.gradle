@@ -88,7 +88,7 @@ publishing {
             pom {
                 name = 'dbupgrader-starter'
                 description = 'A springboot starter for dbupgrader'
-                url = 'https://github.com/codeed/dbupgrader'
+                url = 'https://gitee.com/codeed/dbupgrader'
                 inceptionYear = '2024'
                 licenses {
                     license {
@@ -103,9 +103,9 @@ publishing {
                     }
                 }
                 scm {
-                    connection = 'scm:git:https://github.com/codeed/dbupgrader.git'
-                    developerConnection = 'scm:git:ssh://github.com/codeed/dbupgrader.git'
-                    url = 'https://github.com/codeed/dbupgrader'
+                    connection = 'scm:git:https://gitee.com/codeed/dbupgrader.git'
+                    developerConnection = 'scm:git:ssh://gitee.com/codeed/dbupgrader.git'
+                    url = 'https://gitee.com/codeed/dbupgrader'
                 }
             }
         }
