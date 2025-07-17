@@ -167,9 +167,10 @@ public class DbUpgrader {
                             DbUpgrade upgradeAnnotation = (DbUpgrade) clazz.getDeclaredAnnotation(DbUpgrade.class);
                             if (upgradeAnnotation != null && upgradeAnnotation.maxAffectRecords() > 0 && stats.getTotalAffectedRecords() > upgradeAnnotation.maxAffectRecords()) {
                                 throw new SQLException(
-                                        String.format("Upgrade affected %d records, which exceeds the maximum limit of %d. Please " +
+                                        String.format("Upgrade %s affected %d records, which exceeds the maximum limit of %d. Please " +
                                                         "increase the" +
                                                         " maxAffectRecords or set it to -1 (no limit) in the @DbUpgrade.",
+                                                className,
                                                 stats.getTotalAffectedRecords(), upgradeAnnotation.maxAffectRecords())
                                 );
                             }
