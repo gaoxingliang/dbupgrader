@@ -26,6 +26,10 @@ So the commands are:<br>
 ./gradlew clean && ./gradlew publishToCentral && ./gradlew jreleaserFullRelease
 # upload this bundle zip:
 ls ./build/jreleaser/deploy/mavenCentral/sonatype
+
+-- for the starter:
+cd into the starter folder
+../gradlew -b build.gradle clean && ../gradlew -b build.gradle publishToCentral && ../gradlew -b build.gradle jreleaserFullRelease
 ```
 <br>
 publish it to here: https://central.sonatype.com/publishing

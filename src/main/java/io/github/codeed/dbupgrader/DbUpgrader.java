@@ -1,19 +1,25 @@
 package io.github.codeed.dbupgrader;
 
-import io.github.codeed.dbupgrader.utils.*;
+import com.google.common.util.concurrent.*;
 import io.github.codeed.dbupgrader.stats.*;
+import io.github.codeed.dbupgrader.utils.*;
 import lombok.extern.java.*;
 import org.apache.commons.lang3.*;
+import org.apache.commons.lang3.exception.*;
 
 import javax.sql.*;
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 @Log
 public class DbUpgrader {
     private final String name;
     private final DataSource dataSource;
     private final UpgradeConfiguration upgradeConfiguration;
+    private final ExecutorService asyncExecutor = Executors.newSingleThreadExecutor(
+            new ThreadFactoryBuilder().setNameFormat("dbupgrader-%d").build()
+    );
 
     public DbUpgrader(String name, DataSource ds, UpgradeConfiguration upgradeConfiguration) {
         this.name = name;
@@ -158,27 +164,30 @@ public class DbUpgrader {
                     }
                     UpgradeProcess upgrade = (UpgradeProcess) instance;
                     try {
-                        upgrade.upgrade(this, conn);
-                        // Get statistics after upgrade
-                        SqlExecutionStats stats = StatisticsTrackingConnectionFactory.getStats(conn);
-                        if (stats != null) {
-                            log.info("Upgrade statistics for " + className + ": " + stats);
-                            // Check maxAffectRecords from annotation
-                            DbUpgrade upgradeAnnotation = (DbUpgrade) clazz.getDeclaredAnnotation(DbUpgrade.class);
-                            if (upgradeAnnotation != null && upgradeAnnotation.maxAffectRecords() > 0 && stats.getTotalAffectedRecords() > upgradeAnnotation.maxAffectRecords()) {
-                                throw new SQLException(
-                                        String.format("Upgrade %s affected %d records, which exceeds the maximum limit of %d. Please " +
-                                                        "increase the" +
-                                                        " maxAffectRecords or set it to -1 (no limit) in the @DbUpgrade.",
-                                                className,
-                                                stats.getTotalAffectedRecords(), upgradeAnnotation.maxAffectRecords())
-                                );
-                            }
-                            stats.reset();
+                        DbUpgrade upgradeAnnotation = (DbUpgrade) clazz.getDeclaredAnnotation(DbUpgrade.class);
+                        DbUpgrade.ExecutionMode exeMode = upgradeAnnotation.executionMode();
+                        if (exeMode == DbUpgrade.ExecutionMode.ASYNC_LOG_IF_FAIL || exeMode == DbUpgrade.ExecutionMode.ASYNC_EXIT_IF_FAIL) {
+                            Connection conn2 = conn;
+                            asyncExecutor.submit(() -> {
+                               try {
+                                    executeOneUpgrade(upgrade, conn2, upgradeAnnotation, clazz);
+                               } catch (Exception e) {
+                                   log.severe("Failed to execute upgrade for " + className + " ex:" + ExceptionUtils.getStackTrace(e));
+                                   try {
+                                       conn2.rollback();
+                                   }
+                                   catch (SQLException ex) {
+                                   }
+                                   if (exeMode ==  DbUpgrade.ExecutionMode.ASYNC_EXIT_IF_FAIL) {
+                                        log.severe("Failed to execute upgrade. Will exit jvm...");
+                                        System.exit(-1);
+                                   }
+                               }
+                            });
+                        } else {
+                            executeOneUpgrade(upgrade, conn, upgradeAnnotation, clazz);
                         }
-                        // Record successful upgrade
-                        SqlHelperUtils.executeUpdate(conn, "insert into " + upgradeConfiguration.getUpgradeHistoryTable() + "(application, class_name)" +
-                                " values (?, ?)", upgradeConfiguration.getApplication(), clazz.getName());
+
                         log.info("Executed a new class " + className);
                     } catch (Exception e) {
                         log.severe("Failed to execute upgrade for class: " + className);
@@ -203,6 +212,30 @@ public class DbUpgrader {
         finally {
             SqlHelperUtils.closeQuietly(conn);
         }
+    }
+
+    private void executeOneUpgrade(UpgradeProcess upgrade, Connection conn, DbUpgrade upgradeAnnotation, Class clazz) throws SQLException {
+        upgrade.upgrade(this, conn);
+        // Get statistics after upgrade
+        SqlExecutionStats stats = StatisticsTrackingConnectionFactory.getStats(conn);
+        String className = clazz.getName();
+        if (stats != null) {
+            log.info("Upgrade statistics for " + className + ": " + stats);
+            // Check maxAffectRecords from annotation
+            if (upgradeAnnotation.maxAffectRecords() > 0 && stats.getTotalAffectedRecords() > upgradeAnnotation.maxAffectRecords()) {
+                throw new SQLException(
+                        String.format("Upgrade %s affected %d records, which exceeds the maximum limit of %d. Please " +
+                                        "increase the" +
+                                        " maxAffectRecords or set it to -1 (no limit) in the @DbUpgrade.",
+                                className,
+                                stats.getTotalAffectedRecords(), upgradeAnnotation.maxAffectRecords())
+                );
+            }
+            stats.reset();
+        }
+        // Record successful upgrade
+        SqlHelperUtils.executeUpdate(conn, "insert into " + upgradeConfiguration.getUpgradeHistoryTable() + "(application, class_name)" +
+                " values (?, ?)", upgradeConfiguration.getApplication(), className);
     }
 
     private void updateCurrentVersion(Connection conn, int ver) throws SQLException {

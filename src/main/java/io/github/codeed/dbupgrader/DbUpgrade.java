@@ -27,4 +27,26 @@ public @interface DbUpgrade {
      * @return -1 means no limit
      */
     int maxAffectRecords() default 100;
+
+    /**
+     * how this upgrade will be executed
+     * {@link ExecutionMode}
+     * @return
+     */
+    ExecutionMode executionMode() default ExecutionMode.SEQUENTIAL;
+
+    enum ExecutionMode {
+        /**
+         * normal execute
+         */
+        SEQUENTIAL,
+        /**
+         * log error if async fail
+         */
+        ASYNC_LOG_IF_FAIL,
+        /**
+         * exit jvm if async fail
+         */
+        ASYNC_EXIT_IF_FAIL
+    }
 }
