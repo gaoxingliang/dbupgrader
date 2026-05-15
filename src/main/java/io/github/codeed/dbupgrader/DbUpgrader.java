@@ -57,7 +57,8 @@ public class DbUpgrader {
         if (currentVer > targetVer) {
             log.warning("Current version is " + currentVer + ", which is larger than target version " + targetVer + ". Do you forget to " +
                     "increase the version number? ");
-        } else {
+        }
+        else {
             log.info("Will try to upgrade from " + currentVer + " to " + targetVer);
         }
         // 2 check and do upgrades
@@ -109,7 +110,8 @@ public class DbUpgrader {
                 checkedVersions++;
             }
             checkConn.commit();
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             checkConn.rollback();
             throw e;
         }
@@ -167,33 +169,37 @@ public class DbUpgrader {
                         DbUpgrade upgradeAnnotation = (DbUpgrade) clazz.getDeclaredAnnotation(DbUpgrade.class);
                         DbUpgrade.ExecutionMode exeMode = upgradeAnnotation.executionMode();
                         if (exeMode == DbUpgrade.ExecutionMode.ASYNC_LOG_IF_FAIL || exeMode == DbUpgrade.ExecutionMode.ASYNC_EXIT_IF_FAIL) {
-                            Connection conn2 = conn;
                             asyncExecutor.submit(() -> {
-                               try {
-                                    executeOneUpgrade(upgrade, conn2, upgradeAnnotation, clazz);
-                               } catch (Exception e) {
-                                   log.severe("Failed to execute upgrade for " + className + " ex:" + ExceptionUtils.getStackTrace(e));
-                                   try {
-                                       conn2.rollback();
-                                   }
-                                   catch (SQLException ex) {
-                                   }
-                                   if (exeMode ==  DbUpgrade.ExecutionMode.ASYNC_EXIT_IF_FAIL) {
+                                Connection singleConn = null;
+                                try {
+                                    singleConn = StatisticsTrackingConnectionFactory.createConnection(dataSource.getConnection());
+                                    singleConn.setAutoCommit(false);
+                                    executeOneUpgrade(upgrade, singleConn, upgradeAnnotation, clazz);
+                                    singleConn.commit();
+                                }
+                                catch (Exception e) {
+                                    log.severe("Failed to execute upgrade for " + className + " ex:" + ExceptionUtils.getStackTrace(e));
+                                    SqlHelperUtils.rollbackQuietly(singleConn);
+                                    SqlHelperUtils.closeQuietly(singleConn);
+                                    if (exeMode == DbUpgrade.ExecutionMode.ASYNC_EXIT_IF_FAIL) {
                                         log.severe("Failed to execute upgrade. Will exit jvm...");
                                         System.exit(-1);
-                                   }
-                               }
+                                    }
+                                }
                             });
-                        } else {
+                        }
+                        else {
                             executeOneUpgrade(upgrade, conn, upgradeAnnotation, clazz);
                         }
 
                         log.info("Executed a new class " + className);
-                    } catch (Exception e) {
+                    }
+                    catch (Exception e) {
                         log.severe("Failed to execute upgrade for class: " + className);
                         throw e;
                     }
-                } else {
+                }
+                else {
                     log.warning("The class " + className + " doesn't implement " + UpgradeProcess.class);
                 }
             }
@@ -203,7 +209,8 @@ public class DbUpgrader {
                 updateCurrentVersion(conn, currentVer);
             }
             conn.commit();
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             if (conn != null) {
                 conn.rollback();
             }
@@ -241,7 +248,8 @@ public class DbUpgrader {
     private void updateCurrentVersion(Connection conn, int ver) throws SQLException {
         if (upgradeConfiguration.isDryRun()) {
             log.info("Will tick version to " + ver);
-        } else {
+        }
+        else {
             SqlHelperUtils.executeUpdate(conn, "update " + upgradeConfiguration.getUpgradeConfigurationTable() + " set value = ? where " +
                     "key_name=?", ver + "", getVersionKey());
             log.info("Tick version to " + ver);
@@ -278,7 +286,8 @@ public class DbUpgrader {
             version = 0;
             SqlHelperUtils.insertWithIdReturned(conn, "insert into " + upgradeConfiguration.getUpgradeConfigurationTable() + "(key_name, " +
                     "value) values (?, ?)", getVersionKey(), version + "");
-        } else {
+        }
+        else {
             version = Integer.parseInt(ver);
         }
 

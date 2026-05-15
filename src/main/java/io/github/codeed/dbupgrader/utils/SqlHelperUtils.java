@@ -29,6 +29,14 @@ public class SqlHelperUtils {
         }
     }
 
+    public void rollbackQuietly(Connection conn) {
+        if (conn != null) {
+            try {
+                conn.rollback();
+            } catch (SQLException e) {}
+        }
+    }
+
     public void closeQuietly(Statement stmt) {
         if (stmt != null) {
             try {
